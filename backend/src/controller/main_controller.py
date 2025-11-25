@@ -7,6 +7,13 @@ handlers.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import logging
+from src.utility.logger import AppLogger
+
+AppLogger.init(
+    level=logging.INFO,
+    log_to_file=True,
+)
 
 app = FastAPI()
 
@@ -26,4 +33,4 @@ def health_check():
 
 @app.get("/health", tags=["Health"])
 def health_check():
-    return {"status": "ok", "message": "Docschat FastAPI server running!"}
+    return {"status": "ok", "message": "FastAPI server running!"}
