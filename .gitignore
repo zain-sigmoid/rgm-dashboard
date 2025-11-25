@@ -1,0 +1,18 @@
+# Python bytecode
+*.pyc
+*.pyo
+__pycache__/
+__pycache__/*
+*.py[cod]
+*.egg-info/
+.Python
+env/
+.env
+.venv/
+venv/
+pip-wheel-metadata/
+build/
+dist/
+.DS_Store
+.idea/
+.vscode/
