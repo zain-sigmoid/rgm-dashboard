@@ -1,0 +1,9 @@
+pandas
+numpy
+plotly
+streamlit==1.43.2
+openpyxl
+streamlit_extras
+pykalman
+itables
+streamlit_calendar
