@@ -32,7 +32,7 @@ const Main = () => {
             data-forward experience.
           </p>
 
-          <div className="d-flex justify-content-center gap-3 flex-wrap mt-4">
+          <div className="d-flex justify-content-center gap-3 flex-wrap mt-5">
             <Link className="btn cta-btn" to="/smart-pricing">
               SMART PRICING
             </Link>

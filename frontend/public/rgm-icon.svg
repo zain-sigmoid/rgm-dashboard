@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">Sigmoid Pricing &amp; Promotion Icon</title>
+  <desc id="desc">Gradient badge with upward arrow and bar chart representing pricing and promotion optimization.</desc>
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e0f0ff"/>
+      <stop offset="50%" stop-color="#9ecfff"/>
+      <stop offset="100%" stop-color="#0f62c2"/>
+    </linearGradient>
+    <linearGradient id="arrow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f62c2"/>
+      <stop offset="100%" stop-color="#6aa6ff"/>
+    </linearGradient>
+  </defs>
+  <circle cx="80" cy="80" r="74" fill="url(#grad)" stroke="#0f62c2" stroke-width="4" />
+  <g transform="translate(36 40)">
+    <rect x="0" y="46" width="18" height="28" rx="4" fill="#0f62c2" opacity="0.9"/>
+    <rect x="26" y="34" width="18" height="40" rx="4" fill="#0f62c2" opacity="0.75"/>
+    <rect x="52" y="22" width="18" height="52" rx="4" fill="#0f62c2" opacity="0.6"/>
+    <path d="M16 30 L36 18 L54 24 L80 6" fill="none" stroke="url(#arrow)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M72 8 L88 8 L88 24" fill="none" stroke="url(#arrow)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
