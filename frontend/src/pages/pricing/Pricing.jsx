@@ -19,6 +19,8 @@ const Pricing = () => {
     manufacturers: [],
     retailers: [],
     time_periods: [],
+    brands: [],
+    ppgs: [],
   });
 
   useEffect(() => {
@@ -36,18 +38,29 @@ const Pricing = () => {
   }, []);
 
   const filterPayload = useMemo(() => {
-    const payload = { ...filters };
-    Object.entries(payload).forEach(([k, v]) => {
+    const base = { ...filters };
+    Object.entries(base).forEach(([k, v]) => {
       if (Array.isArray(v) && v.length === 0) {
-        payload[k] = null;
+        base[k] = null;
       }
     });
-    return payload;
-  }, [filters]);
+
+    if (activeTab === "simulation") {
+      const { categories, manufacturers, retailers, brands, ppgs } = base;
+      return { categories, manufacturers, retailers, brands, ppgs };
+    }
+    // summary/trend default
+    const { categories, manufacturers, retailers, time_periods } = base;
+    return { categories, manufacturers, retailers, time_periods };
+  }, [filters, activeTab]);
 
   return (
     <div className="container py-4">
-      <FilterBar filters={filters} onChange={handleFilterChange} />
+      <FilterBar
+        filters={filters}
+        onChange={handleFilterChange}
+        activeTab={activeTab}
+      />
       <div className="d-flex flex-wrap gap-4 mb-3 justify-content-center border-bottom border-secondary">
         <button
           type="button"

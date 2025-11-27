@@ -9,8 +9,8 @@ from pydantic import BaseModel, Field
 
 from src.utility.logger import AppLogger
 
-ROOT_DIR = Path(__file__).resolve().parents[4]
-DEFAULT_DATA_PATH = ROOT_DIR / "streamlit" / "final_pricing_consolidated_file.csv"
+ROOT_DIR = Path(__file__).resolve().parents[3]
+DEFAULT_DATA_PATH = ROOT_DIR / "data" / "final_pricing_consolidated_file.csv"
 logger = AppLogger.get_logger(__name__)
 
 
@@ -28,7 +28,7 @@ def _convert_to_abbreviated(num: float) -> str:
 
 
 class SimulationFilters(BaseModel):
-    # categories: Optional[List[str]] = Field(default=None)
+    categories: Optional[List[str]] = Field(default=None)
     manufacturers: Optional[List[str]] = Field(default=None)
     brands: Optional[List[str]] = Field(default=None)
     ppgs: Optional[List[str]] = Field(default=None)
@@ -71,11 +71,12 @@ class SimulationResponse(BaseModel):
     volume_bars: ComparisonBars
     revenue_bars: ComparisonBars
     table: SimulationTable
+    context: Dict[str, float]
 
 
 class SimulationAnalysisService:
     """
-    Mirrors the Streamlit Simulation_Analysis logic but returns a JSON-friendly payload
+    Returns a JSON-friendly payload
     for the frontend to render charts, cards, and tables.
     """
 
@@ -138,10 +139,13 @@ class SimulationAnalysisService:
     @staticmethod
     def _apply_filters(df: pd.DataFrame, filters: SimulationFilters) -> pd.DataFrame:
         df_fil = df.copy()
-        # if filters.categories and "category" in df_fil.columns:
-        #     df_fil = df_fil[df_fil["category"].isin(filters.categories)]
-        # elif filters.categories:
-        #     logger.warning("Category filter provided but 'category' column not found; skipping category filter.")
+        # if filters.categories and "All" not in filters.categories:
+        #     if "category" in df_fil.columns:
+        #         df_fil = df_fil[df_fil["category"].isin(filters.categories)]
+        #     else:
+        #         logger.warning(
+        #             "Category filter provided but 'category' column not found; skipping category filter."
+        #         )
         if filters.manufacturers and "All" not in filters.manufacturers:
             df_fil = df_fil[df_fil["manufacturer_nm"].isin(filters.manufacturers)]
         if filters.brands and "All" not in filters.brands:
@@ -254,45 +258,49 @@ class SimulationAnalysisService:
         base_price = float(df["Price"].mean()) if not df.empty else 0.0
         base_comp_price = float(df["Competitor Price"].mean()) if not df.empty else 0.0
         base_distribution = float(df["Distribution"].mean()) if not df.empty else 0.0
+        # Price adjustments (match Streamlit: if no change, keep per-row price; else use global scalar)
+        if adj.new_price is None and adj.price_change_pct == 0:
+            df["New Price"] = df["Price"]
+        else:
+            scalar_new_price = (
+                adj.new_price
+                if adj.new_price is not None
+                else base_price * (1 + adj.price_change_pct / 100)
+            )
+            df["New Price"] = scalar_new_price
 
-        new_price = (
-            adj.new_price
-            if adj.new_price is not None
-            else base_price * (1 + adj.price_change_pct / 100)
-        )
-        new_comp_price = (
-            adj.new_competitor_price
-            if adj.new_competitor_price is not None
-            else base_comp_price * (1 + adj.competitor_price_change_pct / 100)
-        )
-        new_distribution = (
-            adj.new_distribution
-            if adj.new_distribution is not None
-            else base_distribution
-        )
+        # Competitor price adjustments
+        if adj.new_competitor_price is None and adj.competitor_price_change_pct == 0:
+            df["New Competitor Price"] = df["Competitor Price"]
+        else:
+            scalar_new_comp = (
+                adj.new_competitor_price
+                if adj.new_competitor_price is not None
+                else base_comp_price * (1 + adj.competitor_price_change_pct / 100)
+            )
+            df["New Competitor Price"] = scalar_new_comp
 
-        price_change_pct = (
-            adj.price_change_pct
-            if adj.new_price is None or base_price == 0
-            else ((new_price / base_price) - 1) * 100
-        )
-        comp_price_change_pct = (
-            adj.competitor_price_change_pct
-            if adj.new_competitor_price is None or base_comp_price == 0
-            else ((new_comp_price / base_comp_price) - 1) * 100
-        )
-        distribution_change_pct = (
-            0.0
-            if base_distribution == 0
-            else ((new_distribution / base_distribution) - 1) * 100
-        )
+        # Distribution adjustments
+        if adj.new_distribution is None:
+            df["New Distribution"] = df["Distribution"]
+        else:
+            df["New Distribution"] = adj.new_distribution
 
-        df["New Price"] = new_price
-        df["Change%"] = price_change_pct
-        df["New Distribution"] = new_distribution
-        df["New Distribution Change%"] = distribution_change_pct
-        df["New Competitor Price"] = new_comp_price
-        df["Competitor Price Change%"] = comp_price_change_pct
+        df["Change%"] = np.where(
+            df["Price"] == 0,
+            0,
+            ((df["New Price"] / df["Price"]) - 1) * 100,
+        )
+        df["Competitor Price Change%"] = np.where(
+            df["Competitor Price"] == 0,
+            0,
+            ((df["New Competitor Price"] / df["Competitor Price"]) - 1) * 100,
+        )
+        df["New Distribution Change%"] = np.where(
+            df["Distribution"] == 0,
+            0,
+            ((df["New Distribution"] / df["Distribution"]) - 1) * 100,
+        )
 
         df["New Volume"] = df["Volume"] * (
             1
@@ -303,22 +311,35 @@ class SimulationAnalysisService:
             )
             + ((df["New Distribution Change%"] / 100) * df["Distribution Elasticity"])
         )
+
         df["Volume Impact(%)"] = ((df["New Volume"] / df["Volume"]) - 1) * 100
         df["Old Revenue"] = df["Volume"] * df["Price"]
         df["New Revenue"] = df["New Volume"] * df["New Price"]
         df["Revenue Impact(%)"] = ((df["New Revenue"] / df["Old Revenue"]) - 1) * 100
         df["Incremental Revenue"] = df["New Revenue"] - df["Old Revenue"]
 
+        new_price_mean = float(df["New Price"].mean()) if not df.empty else 0.0
+        new_comp_price_mean = (
+            float(df["New Competitor Price"].mean()) if not df.empty else 0.0
+        )
+        new_distribution_mean = (
+            float(df["New Distribution"].mean()) if not df.empty else 0.0
+        )
+
         context = {
             "base_price": base_price,
-            "new_price": new_price,
-            "price_change_pct": price_change_pct,
+            "new_price": new_price_mean,
+            "price_change_pct": float(adj.price_change_pct),
             "base_comp_price": base_comp_price,
-            "new_comp_price": new_comp_price,
-            "comp_price_change_pct": comp_price_change_pct,
+            "new_comp_price": new_comp_price_mean,
+            "comp_price_change_pct": float(adj.competitor_price_change_pct),
             "base_distribution": base_distribution,
-            "new_distribution": new_distribution,
-            "distribution_change_pct": distribution_change_pct,
+            "new_distribution": new_distribution_mean,
+            "distribution_change_pct": float(
+                ((new_distribution_mean / base_distribution) - 1) * 100
+            )
+            if base_distribution
+            else 0.0,
         }
         return df, context
 
@@ -426,7 +447,7 @@ class SimulationAnalysisService:
         df_filtered = self._apply_filters(df, filters)
         df_future = self._prepare_future_frame(df_filtered)
         df_input = self._build_base_inputs(df_future)
-        df_calc, _ = self._apply_adjustments(df_input, adjustments)
+        df_calc, context = self._apply_adjustments(df_input, adjustments)
 
         cards = self._build_cards(df_calc)
         volume_bars, revenue_bars = self._bars(df_calc)
@@ -445,4 +466,5 @@ class SimulationAnalysisService:
             volume_bars=volume_bars,
             revenue_bars=revenue_bars,
             table=table,
+            context=context,
         )
