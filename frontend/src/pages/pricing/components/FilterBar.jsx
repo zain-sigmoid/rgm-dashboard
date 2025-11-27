@@ -88,7 +88,7 @@ MultiSelect.propTypes = {
   onChange: PropTypes.func.isRequired,
 };
 
-const FilterBar = ({ filters, onChange }) => {
+const FilterBar = ({ filters, onChange, activeTab }) => {
   const { options, fetchOptions } = useContext(userContext);
 
   useEffect(() => {
@@ -101,12 +101,17 @@ const FilterBar = ({ filters, onChange }) => {
   const manufacturerOptions = options.data?.manufacturers || [];
   const retailerOptions = options.data?.retailers || [];
   const timePeriodOptions = options.data?.time_periods || [];
+  const brandOptions = options.data?.brands || [];
+  const ppgOptions = options.data?.ppgs || [];
+  const isSimulation = activeTab === "simulation";
+
+  console.log(categoryOptions);
 
   return (
-    <div className="card border-0 shadow-sm mb-4">
+    <div className="card border shadow-sm mb-4">
       <div className="card-body">
         <div className="row g-3">
-          <div className="col-lg-3 col-md-6">
+          <div className={`col-lg-${isSimulation ? "3" : "3"} col-md-6`}>
             <MultiSelect
               label="Category"
               name="categories"
@@ -115,7 +120,7 @@ const FilterBar = ({ filters, onChange }) => {
               onChange={onChange}
             />
           </div>
-          <div className="col-lg-3 col-md-6">
+          <div className={`col-lg-${isSimulation ? "3" : "3"} col-md-6`}>
             <MultiSelect
               label="Manufacturer"
               name="manufacturers"
@@ -124,7 +129,7 @@ const FilterBar = ({ filters, onChange }) => {
               onChange={onChange}
             />
           </div>
-          <div className="col-lg-3 col-md-6">
+          <div className={`col-lg-${isSimulation ? "3" : "3"} col-md-6`}>
             <MultiSelect
               label="Retailer"
               name="retailers"
@@ -133,15 +138,38 @@ const FilterBar = ({ filters, onChange }) => {
               onChange={onChange}
             />
           </div>
-          <div className="col-lg-3 col-md-6">
-            <MultiSelect
-              label="Time Period"
-              name="time_periods"
-              options={timePeriodOptions}
-              selected={filters.time_periods}
-              onChange={onChange}
-            />
-          </div>
+          {isSimulation ? (
+            <>
+              <div className={`col-lg-${isSimulation ? "3" : "3"} col-md-6`}>
+                <MultiSelect
+                  label="Brand"
+                  name="brands"
+                  options={brandOptions}
+                  selected={filters.brands}
+                  onChange={onChange}
+                />
+              </div>
+              <div className={`col-lg-${isSimulation ? "3" : "3"} col-md-6`}>
+                <MultiSelect
+                  label="PPG"
+                  name="ppgs"
+                  options={ppgOptions}
+                  selected={filters.ppgs}
+                  onChange={onChange}
+                />
+              </div>
+            </>
+          ) : (
+            <div className={`col-lg-${isSimulation ? "3" : "3"} col-md-6`}>
+              <MultiSelect
+                label="Time Period"
+                name="time_periods"
+                options={timePeriodOptions}
+                selected={filters.time_periods}
+                onChange={onChange}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -152,10 +180,13 @@ FilterBar.propTypes = {
   filters: PropTypes.shape({
     categories: PropTypes.arrayOf(PropTypes.string).isRequired,
     manufacturers: PropTypes.arrayOf(PropTypes.string).isRequired,
+    brands: PropTypes.arrayOf(PropTypes.string),
+    ppgs: PropTypes.arrayOf(PropTypes.string),
     retailers: PropTypes.arrayOf(PropTypes.string).isRequired,
     time_periods: PropTypes.arrayOf(PropTypes.string).isRequired,
   }).isRequired,
   onChange: PropTypes.func.isRequired,
+  activeTab: PropTypes.string.isRequired,
 };
 
 export default FilterBar;
