@@ -5,7 +5,9 @@ import numpy as np
 from typing import Dict, Any, Optional
 import plotly.graph_objects as go
 
-CSV_PATH = os.environ.get("DESCRIPTIVE_CSV_PATH", "final_pricing_consolidated_file.csv")
+from pathlib import Path
+ROOT_DIR = Path(__file__).resolve().parents[3]
+CSV_PATH = ROOT_DIR / "data" / "final_pricing_consolidated_file.csv"
 
 def load_and_clean_csv(path: Optional[str] = None) -> pd.DataFrame:
     p = path or CSV_PATH

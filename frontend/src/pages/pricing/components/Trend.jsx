@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
-import { UserStateContext } from "../../context/UserState"; 
-import FilterBar from "./components/FilterBar"; 
+import { UserStateContext } from "../../../context/UserState";
+import FilterBar from "./FilterBar";
 import {
   LineChart,
   Line,

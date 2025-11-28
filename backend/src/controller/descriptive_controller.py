@@ -1,10 +1,9 @@
-# backend/src/controller/descriptive_controller.py
 from fastapi import APIRouter, HTTPException
-from backend.src.model.response import DescriptiveRequest, DescriptiveResponse
-from backend.src.services.core_service.descriptive_service import compute_descriptive
+from src.model.response import DescriptiveRequest, DescriptiveResponse
+from src.services.core_service.descriptive_service import compute_descriptive
 from typing import Dict
 
-router = APIRouter()
+router = APIRouter(prefix="/api/trend", tags=["Trend"])
 
 @router.post("/compute", response_model=DescriptiveResponse)
 def compute_descriptive_endpoint(payload: DescriptiveRequest):
