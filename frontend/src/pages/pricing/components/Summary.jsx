@@ -14,10 +14,12 @@ import {
 } from "recharts";
 import { userContext } from "../../../context/userContext";
 import BarLabel from "./BarLabel";
-import { ChartCard } from "../../components/ChartCard";
+import { formatPercent } from "../config/labelFormatter";
+import "../styling/style.css";
 
 const Summary = ({ filters }) => {
   const { summary, fetchSummary } = useContext(userContext);
+  const grads = ["grad-1", "grad-2", "grad-3", "grad-4"];
 
   useEffect(() => {
     fetchSummary(filters);
@@ -30,6 +32,8 @@ const Summary = ({ filters }) => {
   const revenueRetailerTable = summary.data?.revenue_by_retailer_table ?? [];
   const revenueRetailer = summary.data?.revenue_by_retailer ?? [];
   const revenueRetailerChart = summary.data?.revenue_by_retailer_chart ?? [];
+
+  console.log(summary);
 
   const revenueChartData = useMemo(
     () =>
@@ -69,7 +73,7 @@ const Summary = ({ filters }) => {
       ) ?? [],
     [revenueRetailerChart?.columns]
   );
-  console.log(retailerPeriods);
+
   const chartData = useMemo(() => {
     if (!retailerPeriods.length) return [];
     return retailerPeriods.map((period) => {
@@ -83,7 +87,7 @@ const Summary = ({ filters }) => {
 
   const colors = ["#e53935", "#fb8c00", "#43a047", "#1e88e5", "#6d4c41"];
   return (
-    <div className="container py-4">
+    <div className="py-4 pe-4">
       <div className="d-flex justify-content-between align-items-center mb-3">
         <div>
           <h4 className="mb-1">Summary</h4>
@@ -99,69 +103,136 @@ const Summary = ({ filters }) => {
         )}
       </div>
 
+      {/* KPIs Cards */}
       <div className="row g-3 mb-4">
-        {cards.map((card) => (
+        {cards.map((card, idx) => (
           <div className="col-md-3" key={card.label}>
-            <div className="card shadow-sm border h-100">
-              <div className="card-body">
-                <div className="text-muted small">{card.label}</div>
-                <div className="fs-4 fw-bold">{card.value}</div>
-              </div>
+            <div className={`glass-card h-100 ${grads[idx % grads.length]}`}>
+              <div className="fw-semibold small">{card.label}</div>
+              <div className="fw-bold fs-1">{card.value}</div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="row g-4">
-        <div className="col-lg-4">
-          <div className="card shadow-sm border h-100 pe-4 py-2">
-            <div className="card-body">
-              <h6 className="fw-bold mb-3 text-center">
-                Revenue Share vs Fair Share
-              </h6>
-              <div style={{ height: 320 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={fairShare} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <YAxis
-                      dataKey="manufacturer"
-                      type="category"
-                      width={70}
-                      tick={{ fontSize: 12 }}
-                      textAnchor="end"
-                    />
-                    <XAxis type="number" />
-                    <Tooltip />
-                    <Legend />
-                    <Bar
-                      dataKey="revenue_share"
-                      name="Revenue Share %"
-                      fill="#0f62c2"
-                    >
-                      <LabelList
-                        dataKey="revenue_share"
-                        content={<BarLabel />}
-                      />
-                    </Bar>
-                    <Bar
-                      dataKey="fair_share"
-                      name="Fair Share %"
-                      fill="#6aa6ff"
-                    >
-                      <LabelList dataKey="fair_share" content={<BarLabel />} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+      <div className="card shadow-sm border p-4 my-5 abstract-curtain-bg">
+        <div className="card-body">
+          <div className="row g-4">
+            <div className="col-lg-5">
+              <div className="h-100 p-4 abstract-curtain-content">
+                <div
+                  className="rounded-circle d-flex justify-content-center align-items-center mb-3"
+                  style={{
+                    width: "70px",
+                    height: "70px",
+                    background: "rgba(255,255,255,0.2)",
+                    backdropFilter: "blur(6px)",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  <i className="fa-solid fa-chart-pie fs-3"></i>
+                </div>
+
+                {/* HEADING */}
+                <h2 className="fw-bold mb-2 text-white">
+                  Manufacturer Revenue Share
+                </h2>
+
+                {/* DESCRIPTION */}
+                <p className="mb-4 text-dark" style={{ opacity: 0.9 }}>
+                  Compare actual revenue share against fair share to identify
+                  over- and under-performing manufacturers.
+                </p>
+
+                {/* INSIGHT BADGES */}
+                <div className="d-flex flex-column gap-3">
+                  <span
+                    className="badge rounded-pill px-3 py-2"
+                    style={{
+                      background: "rgba(3, 31, 109, 0.39)",
+                      backdropFilter: "blur(1px)",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    <strong>Revenue Share</strong>
+                  </span>
+
+                  <span
+                    className="badge rounded-pill px-3 py-2"
+                    style={{
+                      background: "rgba(3, 31, 109, 0.39)",
+                      backdropFilter: "blur(1px)",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    <strong>Fair Share</strong>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="col-lg-7 p-2">
+              <div className="card shadow-sm border h-100 pe-4 py-2">
+                <div className="card-body">
+                  <div style={{ height: 320 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={fairShare} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <YAxis
+                          dataKey="manufacturer"
+                          type="category"
+                          width={70}
+                          tick={{ fontSize: 12 }}
+                          textAnchor="end"
+                        />
+                        <XAxis type="number" />
+                        <Tooltip />
+                        <Legend />
+                        <Bar
+                          dataKey="revenue_share"
+                          name="Revenue Share %"
+                          fill="#0f62c2"
+                        >
+                          <LabelList
+                            dataKey="revenue_share"
+                            content={
+                              <BarLabel
+                                formatter={formatPercent}
+                                orientation="horizontal"
+                              />
+                            }
+                          />
+                        </Bar>
+                        <Bar
+                          dataKey="fair_share"
+                          name="Fair Share %"
+                          fill="#6aa6ff"
+                        >
+                          <LabelList
+                            dataKey="fair_share"
+                            content={
+                              <BarLabel
+                                formatter={formatPercent}
+                                orientation="horizontal"
+                              />
+                            }
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="col-lg-4">
+      <div className="row g-4">
+        <div className="col-lg-6">
           <div className="card shadow-sm border h-100 pe-4 py-2">
             <div className="card-body">
               <h6 className="fw-bold mb-3 text-center">
-                Revenue by Manufacturer
+                Manufacturer Wise Revenue
               </h6>
               <div style={{ height: 320 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -187,14 +258,14 @@ const Summary = ({ filters }) => {
             </div>
           </div>
         </div>
-        <div className="col-lg-4">
+        <div className="col-lg-6">
           <div className="card shadow-sm border h-100 px-4 py-2">
             <div className="card-body">
               <h6 className="fw-bold mb-3 text-center">
                 Manufacturer Revenue Comparison
               </h6>
               <div style={{ height: 320, overflow: "auto" }}>
-                <table className="table table-striped-columns border mt-4">
+                <table className="table table-striped-columns mt-4">
                   <thead>
                     <tr>
                       {revenueTable?.columns?.map((col) => (
@@ -223,68 +294,134 @@ const Summary = ({ filters }) => {
           </div>
         </div>
       </div>
-      <div className="row g-4 mt-3">
-        <div className="col-lg-4">
-          <div className="card shadow-sm border h-100 py-2">
-            <div className="card-body">
-              <h6 className="fw-bold mb-3 text-center">
-                Retailer Revenue Share
-              </h6>
-              <div style={{ height: 320 }}>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart
-                    data={revenueRetailer}
-                    layout="vertical"
-                    barSize={18}
-                    margin={{ right: 40 }}
+      <div className="card shadow-sm border p-4 my-5 abstract-curtain-bg-retailer">
+        <div className="card-body">
+          <div className="row g-4">
+            <div className="col-lg-7 p-2">
+              <div className="card shadow-sm border h-100 pe-4 py-2">
+                <div className="card-body">
+                  <div style={{ height: 320 }}>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart
+                        data={revenueRetailer}
+                        layout="vertical"
+                        barSize={18}
+                        margin={{ right: 40 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <YAxis
+                          dataKey="retailer_id"
+                          type="category"
+                          width={70}
+                          tick={{ fontSize: 12 }}
+                        />
+                        <XAxis
+                          type="number"
+                          tickFormatter={(v) => v + "%"}
+                          tick={{ fontSize: 12 }}
+                        />
+
+                        <Tooltip formatter={(v) => v.toFixed(2) + "%"} />
+                        <Legend wrapperStyle={{ fontSize: 12 }} />
+
+                        <Bar
+                          dataKey="revenue_share"
+                          name="Revenue Share"
+                          fill="#f64915ff"
+                        >
+                          <LabelList
+                            dataKey="revenue_share_label"
+                            content={
+                              <BarLabel
+                                formatter={formatPercent}
+                                orientation="horizontal"
+                              />
+                            }
+                          />
+                        </Bar>
+
+                        <Bar
+                          dataKey="rev_share_retailer_fair_share"
+                          name="Fair Share"
+                          fill="#ffa726"
+                        >
+                          <LabelList
+                            dataKey="rev_share_retailer_fair_share"
+                            content={
+                              <BarLabel
+                                formatter={formatPercent}
+                                orientation="horizontal"
+                              />
+                            }
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="col-lg-5">
+              <div className="h-100 p-4 abstract-curtain-content text-end">
+                <div
+                  className="rounded-circle d-flex justify-content-center align-items-center mb-3 ms-auto"
+                  style={{
+                    width: "70px",
+                    height: "70px",
+                    background: "rgba(255,255,255,0.2)",
+                    backdropFilter: "blur(6px)",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                    right: "0",
+                  }}
+                >
+                  <i className="fa-solid fa-store fs-3"></i>
+                </div>
+
+                {/* HEADING */}
+                <h2 className="fw-bold mb-2 text-white">
+                  Retailer Revenue Share
+                </h2>
+
+                {/* DESCRIPTION */}
+                <p className="mb-4 text-dark" style={{ opacity: 0.9 }}>
+                  See how each retailer’s revenue share compares with its fair
+                  share to spot over and under performers.
+                </p>
+
+                {/* INSIGHT BADGES */}
+                <div className="d-flex flex-column gap-3">
+                  <span
+                    className="badge rounded-pill px-3 py-2"
+                    style={{
+                      background: "rgba(109, 54, 3, 0.39)",
+                      backdropFilter: "blur(1px)",
+                      fontSize: "0.9rem",
+                    }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <YAxis
-                      dataKey="retailer_id"
-                      type="category"
-                      width={70}
-                      tick={{ fontSize: 12 }}
-                    />
-                    <XAxis
-                      type="number"
-                      tickFormatter={(v) => v + "%"}
-                      tick={{ fontSize: 12 }}
-                    />
+                    <strong>Revenue Share</strong>
+                  </span>
 
-                    <Tooltip formatter={(v) => v.toFixed(2) + "%"} />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-
-                    <Bar
-                      dataKey="revenue_share"
-                      name="Revenue Share"
-                      fill="#f64915ff"
-                    >
-                      <LabelList
-                        dataKey="revenue_share_label"
-                        content={<BarLabel />}
-                      />
-                    </Bar>
-
-                    <Bar
-                      dataKey="rev_share_retailer_fair_share"
-                      name="Fair Share"
-                      fill="#ffa726"
-                    >
-                      <LabelList
-                        dataKey="rev_share_retailer_fair_share"
-                        content={<BarLabel />}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                  <span
+                    className="badge rounded-pill px-3 py-2"
+                    style={{
+                      background: "rgba(109, 44, 3, 0.39)",
+                      backdropFilter: "blur(1px)",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    <strong>Fair Share</strong>
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <div className="col-lg-4">
+      </div>
+      <div className="row g-4">
+        <div className="col-lg-6">
           <div className="card shadow-sm border h-100 pe-4 py-2">
             <div className="card-body">
-              <h6 className="fw-bold text-center">Revenue by Retailers</h6>
+              <h6 className="fw-bold text-center">Retailers Wise Revenue</h6>
               <div style={{ height: 320 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} barSize={50}>
@@ -315,7 +452,7 @@ const Summary = ({ filters }) => {
             </div>
           </div>
         </div>
-        <div className="col-lg-4">
+        <div className="col-lg-6">
           <div className="card shadow-sm border h-100 px-4 py-2">
             <div className="card-body">
               <h6 className="fw-bold text-center">
@@ -323,7 +460,7 @@ const Summary = ({ filters }) => {
               </h6>
               <div style={{ height: 320, overflow: "auto" }}>
                 <table
-                  className="table table-striped-columns border mt-2"
+                  className="table table-striped-columns mt-2"
                   style={{ borderCollapse: "collapse", width: "100%" }}
                 >
                   <thead>
