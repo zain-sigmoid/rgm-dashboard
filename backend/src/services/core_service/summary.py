@@ -81,8 +81,6 @@ class SummaryResponse(BaseModel):
 class FilterOptions(BaseModel):
     categories: List[str] = Field(default_factory=list)
     manufacturers: List[str] = Field(default_factory=list)
-    brands: List[str] = Field(default_factory=list)
-    ppgs: List[str] = Field(default_factory=list)
     retailers: List[str] = Field(default_factory=list)
     time_periods: List[str] = Field(default_factory=list)
 
@@ -360,27 +358,42 @@ class Summary:
         columns = ["Manufacturer"] + [c for c in pivot.columns[1:]]
         return RevenueTable(columns=columns, rows=rows, value_unit="M")
 
-    @staticmethod
-    def build_options(df: pd.DataFrame) -> FilterOptions:
+    def build_options(self, df: pd.DataFrame, filters: SummaryFilters) -> FilterOptions:
+        selected_manufacturers = filters.manufacturers or []
+        # Base categories (not dependent on manufacturer)
         categories = (
             df["category"].dropna().unique().tolist()
             if "category" in df.columns
             else ["SurfaceCare"]
         )
-        manufacturers = sorted(df["manufacturer_nm"].dropna().unique().tolist())
-        brands = (
-            sorted(df["brand_nm"].dropna().unique().tolist())
-            if "brand_nm" in df.columns
-            else []
-        )
-        ppgs = (
-            sorted(df["ppg_nm"].dropna().unique().tolist())
-            if "ppg_nm" in df.columns
-            else []
-        )
-        retailers = sorted(df["retailer_id"].dropna().unique().tolist())
 
-        years = sorted(df["year"].astype(str).unique().tolist())
+        # If a manufacturer is selected → filter the dataframe first
+        if selected_manufacturers:
+            filtered_df = df[df["manufacturer_nm"].isin(selected_manufacturers)]
+        else:
+            filtered_df = df.copy()
+
+        # Now build dependent options from filtered_df
+        manufacturers = sorted(df["manufacturer_nm"].dropna().unique().tolist())
+
+        # brands = (
+        #     sorted(filtered_df["brand_nm"].dropna().unique().tolist())
+        #     if "brand_nm" in df.columns
+        #     else []
+        # )
+
+        # ppgs = (
+        #     sorted(filtered_df["ppg_nm"].dropna().unique().tolist())
+        #     if "ppg_nm" in df.columns
+        #     else []
+        # )
+
+        retailers = (
+            sorted(filtered_df["retailer_id"].dropna().unique().tolist())
+            if "retailer_id" in df.columns
+            else []
+        )
+        years = sorted(filtered_df["year"].astype(str).unique().tolist())
         time_periods: List[str] = []
         for year in years:
             time_periods.append(year)
@@ -389,11 +402,10 @@ class Summary:
             time_periods.extend(
                 [f"{year} Q1", f"{year} Q2", f"{year} Q3", f"{year} Q4"]
             )
+
         return FilterOptions(
             categories=categories,
             manufacturers=manufacturers,
-            brands=brands,
-            ppgs=ppgs,
             retailers=retailers,
             time_periods=time_periods,
         )

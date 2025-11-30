@@ -64,6 +64,14 @@ class SimulationTable(BaseModel):
     rows: List[Dict[str, str]]
 
 
+class SimulationOptions(BaseModel):
+    categories: List[str] = Field(default_factory=list)
+    manufacturers: List[str] = Field(default_factory=list)
+    brands: List[str] = Field(default_factory=list)
+    ppgs: List[str] = Field(default_factory=list)
+    retailers: List[str] = Field(default_factory=list)
+
+
 class SimulationResponse(BaseModel):
     adjustments: SimulationAdjustments
     filters_applied: SimulationFilters
@@ -335,11 +343,11 @@ class SimulationAnalysisService:
             "comp_price_change_pct": float(adj.competitor_price_change_pct),
             "base_distribution": base_distribution,
             "new_distribution": new_distribution_mean,
-            "distribution_change_pct": float(
-                ((new_distribution_mean / base_distribution) - 1) * 100
-            )
-            if base_distribution
-            else 0.0,
+            "distribution_change_pct": (
+                float(((new_distribution_mean / base_distribution) - 1) * 100)
+                if base_distribution
+                else 0.0
+            ),
         }
         return df, context
 
@@ -439,6 +447,59 @@ class SimulationAnalysisService:
             rows.append(entry)
 
         return SimulationTable(columns=table_cols, rows=rows)
+
+    def build_options(
+        self, df: pd.DataFrame, filters: SimulationFilters
+    ) -> SimulationOptions:
+        selected_manufacturers = filters.manufacturers or []
+        selected_brands = filters.brands or []
+
+        # Categories (independent)
+        categories = (
+            df["category"].dropna().unique().tolist()
+            if "category" in df.columns
+            else ["SurfaceCare"]
+        )
+        manufacturers = (
+            sorted(df["manufacturer_nm"].dropna().unique().tolist())
+            if "manufacturer_nm" in df.columns
+            else []
+        )
+
+        # ---------- 1) FILTER FOR BRANDS (depends ONLY on manufacturers) ----------
+        if selected_manufacturers:
+            df_for_brands = df[df["manufacturer_nm"].isin(selected_manufacturers)]
+        else:
+            df_for_brands = df
+
+        if "brand_nm" in df.columns:
+            brands = sorted(df_for_brands["brand_nm"].dropna().unique().tolist())
+        else:
+            brands = []
+
+        # ---------- 2) FILTER FOR PPGs + RETAILERS (depends on manufacturers + brands) ----------
+        df_for_ppg = df_for_brands
+
+        if selected_brands:
+            df_for_ppg = df_for_ppg[df_for_ppg["brand_nm"].isin(selected_brands)]
+
+        if "ppg_nm" in df.columns:
+            ppgs = sorted(df_for_ppg["ppg_nm"].dropna().unique().tolist())
+        else:
+            ppgs = []
+
+        if "retailer_id" in df.columns:
+            retailers = sorted(df_for_ppg["retailer_id"].dropna().unique().tolist())
+        else:
+            retailers = []
+
+        return SimulationOptions(
+            categories=categories,
+            manufacturers=manufacturers,
+            brands=brands,
+            ppgs=ppgs,
+            retailers=retailers,
+        )
 
     def build_simulation(
         self, filters: SimulationFilters, adjustments: SimulationAdjustments
