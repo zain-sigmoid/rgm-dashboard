@@ -183,9 +183,9 @@ const Simulation = ({ filters }) => {
   );
 
   return (
-    <div className="container py-4">
+    <div className="py-4 pe-4">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="fw-bold text-muted mb-0">Simulation</h4>
+        <h4 className="mb-1">Simulation</h4>
         {simulation.loading && (
           <span className="badge bg-info text-dark">Loading...</span>
         )}
@@ -193,7 +193,7 @@ const Simulation = ({ filters }) => {
           <span className="badge bg-danger">{simulation.error}</span>
         )}
       </div>
-      <form className="row g-4 mb-4 mt-3" onSubmit={handleSubmit} noValidate>
+      <form className="row g-4 mb-4" onSubmit={handleSubmit} noValidate>
         {/* Price Change Card */}
         <div className="col-lg-4 col-md-6">
           <div className="card shadow-sm border h-100">
