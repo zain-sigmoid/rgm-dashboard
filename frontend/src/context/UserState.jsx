@@ -9,34 +9,53 @@ const initialState = {
   options: { data: null, loading: false, error: null, fetched: false },
   summary: { data: null, loading: false, error: null, fetched: false },
   simulation: { data: null, loading: false, error: null, fetched: false },
+  trend: { data: null, loading: false, error: null, fetched: false },
+  trendOptions: { data: null, loading: false, error: null, fetched: false },
+  contribution: { data: null, loading: false, error: null, fetched: false },
 };
 
 function reducer(state, action) {
   switch (action.type) {
-    case "OPTIONS_START":
-      return { ...state, options: { data: state.options.data, loading: true, error: null, fetched: true } };
-    case "OPTIONS_SUCCESS":
-      return { ...state, options: { data: action.payload, loading: false, error: null, fetched: true } };
-    case "OPTIONS_ERROR":
-      return { ...state, options: { data: null, loading: false, error: action.payload, fetched: true } };
-    case "SUMMARY_START":
+    case "FETCH_START": {
+      const key = action.key;
       return {
         ...state,
-        summary: { data: state.summary.data, loading: true, error: null, fetched: true },
+        [key]: {
+          // keep previous data (same as your *_START cases)
+          data: state[key]?.data ?? null,
+          loading: true,
+          error: null,
+          fetched: true,
+        },
       };
-    case "SUMMARY_SUCCESS":
-      return { ...state, summary: { data: action.payload, loading: false, error: null, fetched: true } };
-    case "SUMMARY_ERROR":
-      return { ...state, summary: { data: null, loading: false, error: action.payload, fetched: true } };
-    case "SIM_START":
+    }
+
+    case "FETCH_SUCCESS": {
+      const key = action.key;
       return {
         ...state,
-        simulation: { data: state.simulation.data, loading: true, error: null, fetched: true },
+        [key]: {
+          data: action.payload,
+          loading: false,
+          error: null,
+          fetched: true,
+        },
       };
-    case "SIM_SUCCESS":
-      return { ...state, simulation: { data: action.payload, loading: false, error: null, fetched: true } };
-    case "SIM_ERROR":
-      return { ...state, simulation: { data: null, loading: false, error: action.payload, fetched: true } };
+    }
+
+    case "FETCH_ERROR": {
+      const key = action.key;
+      return {
+        ...state,
+        [key]: {
+          data: null,
+          loading: false,
+          error: action.payload,
+          fetched: true,
+        },
+      };
+    }
+
     default:
       return state;
   }
@@ -45,66 +64,124 @@ function reducer(state, action) {
 const UserState = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const fetchOptions = useCallback(async () => {
-    dispatch({ type: "OPTIONS_START" });
-    try {
-      const res = await fetch(`${API_BASE}/api/pricing/options`);
-      if (!res.ok) throw new Error(`Options request failed: ${res.statusText}`);
-      const data = await res.json();
-      dispatch({ type: "OPTIONS_SUCCESS", payload: data });
-      return data;
-    } catch (err) {
-      dispatch({ type: "OPTIONS_ERROR", payload: err.message });
-      return null;
-    }
-  }, []);
+  // generic helper (optional but keeps code DRY)
+  const createFetcher = useCallback(
+    (key, url) =>
+      async (payload = {}) => {
+        dispatch({ type: "FETCH_START", key });
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload || {}),
+          });
 
-  const fetchSummary = useCallback(async (filters = {}) => {
-    dispatch({ type: "SUMMARY_START" });
-    try {
-      const res = await fetch(`${API_BASE}/api/pricing/summary`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(filters || {}),
-      });
-      if (!res.ok) throw new Error(`Summary request failed: ${res.statusText}`);
-      const data = await res.json();
-      dispatch({ type: "SUMMARY_SUCCESS", payload: data });
-      return data;
-    } catch (err) {
-      dispatch({ type: "SUMMARY_ERROR", payload: err.message });
-      return null;
-    }
-  }, []);
+          if (!res.ok)
+            throw new Error(`${key} request failed: ${res.statusText}`);
 
-  const runSimulation = useCallback(async (payload = {}) => {
-    dispatch({ type: "SIM_START" });
+          const data = await res.json();
+          dispatch({ type: "FETCH_SUCCESS", key, payload: data });
+          return data;
+        } catch (err) {
+          dispatch({
+            type: "FETCH_ERROR",
+            key,
+            payload: err.message || "Unknown error",
+          });
+          return null;
+        }
+      },
+    []
+  );
+
+  // OPTIONS (special because endpoint depends on tab)
+  const fetchOptions = useCallback(async (payload = {}, tab = "summary") => {
+    const key = "options";
+    dispatch({ type: "FETCH_START", key });
+
+    const endpointMap = {
+      summary: "options",
+      simulation: "simulation/options",
+      contribution: "contribution/options",
+    };
+
+    const endpoint = endpointMap[tab] || "options";
+
     try {
-      const res = await fetch(`${API_BASE}/api/pricing/simulation`, {
+      const res = await fetch(`${API_BASE}/api/pricing/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload || {}),
       });
-      if (!res.ok) throw new Error(`Simulation request failed: ${res.statusText}`);
+
+      if (!res.ok) throw new Error(`Options request failed: ${res.statusText}`);
+
       const data = await res.json();
-      dispatch({ type: "SIM_SUCCESS", payload: data });
+      dispatch({ type: "FETCH_SUCCESS", key, payload: data });
       return data;
     } catch (err) {
-      dispatch({ type: "SIM_ERROR", payload: err.message });
+      dispatch({
+        type: "FETCH_ERROR",
+        key,
+        payload: err.message || "Unknown error",
+      });
       return null;
     }
   }, []);
+
+  // SUMMARY
+  const fetchSummary = useCallback(
+    createFetcher("summary", `${API_BASE}/api/pricing/summary`),
+    [createFetcher]
+  );
+
+  // SIMULATION
+  const runSimulation = useCallback(
+    createFetcher("simulation", `${API_BASE}/api/pricing/simulation`),
+    [createFetcher]
+  );
+
+  // TREND
+  const fetchTrend = useCallback(
+    createFetcher("trend", `${API_BASE}/api/trend/compute`),
+    [createFetcher]
+  );
+
+  // TREND OPTIONS
+  const fetchTrendOptions = useCallback(
+    createFetcher("trendOptions", `${API_BASE}/api/trend/options`),
+    [createFetcher]
+  );
+
+  const getContribution = useCallback(
+    createFetcher("contribution", `${API_BASE}/api/pricing/contribution`),
+    [createFetcher]
+  );
 
   const value = useMemo(
     () => ({
       options: state.options,
       summary: state.summary,
       simulation: state.simulation,
+      trend: state.trend,
+      trendOptions: state.trendOptions,
+      contribution: state.contribution,
       fetchOptions,
       fetchSummary,
       runSimulation,
+      fetchTrend,
+      fetchTrendOptions,
+      getContribution,
     }),
-    [state, fetchOptions, fetchSummary, runSimulation]
+    [
+      state,
+      fetchOptions,
+      fetchSummary,
+      runSimulation,
+      fetchTrend,
+      fetchTrendOptions,
+      getContribution,
+    ]
   );
 
   return <userContext.Provider value={value}>{children}</userContext.Provider>;
