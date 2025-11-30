@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.utility.logger import AppLogger
-from src.services.core_service.summary import (
+from src.services.smart_pricing_service.summary import (
     SummaryFilters,
     SummaryResponse,
     Summary as SummaryService,
     FilterOptions,
 )
-from src.services.core_service.simulation_analysis import (
+from src.services.smart_pricing_service.simulation_analysis import (
     SimulationAdjustments,
     SimulationFilters,
     SimulationResponse,
@@ -20,6 +20,13 @@ from src.services.smart_pricing_service.contribution_analysis import (
     ContributionOptions,
     ContributionResponse,
 )
+
+from src.model.response import (
+    DescriptiveResponse,
+    DescriptiveFilters,
+    DescriptiveOptions,
+)
+from src.services.smart_pricing_service.descriptive_analysis import DescriptiveAnalysis
 
 router = APIRouter(prefix="/api/pricing", tags=["Pricing"])
 logger = AppLogger.get_logger(__name__)
@@ -140,6 +147,43 @@ def options(
         return service.build_options(df, filters)
     except FileNotFoundError as exc:
         logger.error("File Not Found at Contribution Analysis")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+
+
+# ======================== Trend Tab ===============================
+def get_descriptive_service() -> DescriptiveAnalysis:
+    return DescriptiveAnalysis()
+
+
+@router.post("/trend", response_model=DescriptiveResponse)
+def compute_descriptive_endpoint(payload: DescriptiveFilters):
+    try:
+        filters = payload
+        service = get_descriptive_service()
+        result = service.compute_descriptive(filters)
+        return result
+    except FileNotFoundError as e:
+        logger.error(f"Some error occurred in file not found :{e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Exception:{e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/trend/options", response_model=DescriptiveOptions)
+def options(
+    payload: DescriptiveFilters,
+    service: DescriptiveAnalysis = Depends(get_descriptive_service),
+) -> DescriptiveFilters:
+    try:
+        filters = payload
+        df = service.load_and_clean_csv()
+        options = service.build_options(df, filters)
+        return options
+    except FileNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc),

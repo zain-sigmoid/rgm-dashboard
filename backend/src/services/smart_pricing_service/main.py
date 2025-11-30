@@ -1,4 +1,4 @@
-from src.services.core_service.summary import Summary
+from backend.src.services.smart_pricing_service.summary import Summary
 
 
 class SmartPricing:
