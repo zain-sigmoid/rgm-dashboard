@@ -3,7 +3,8 @@ import PropTypes from "prop-types";
 import { userContext } from "./userContext";
 
 const API_BASE =
-  import.meta.env.VITE_API_BASE?.replace(/\/$/, "") || "http://127.0.0.1:8000";
+  import.meta.env.VITE_API_BASE?.replace(/\/$/, "") ||
+  "http://127.0.0.1:8000/api/pricing";
 
 const initialState = {
   options: { data: null, loading: false, error: null, fetched: false },
@@ -108,7 +109,7 @@ const UserState = ({ children }) => {
     const endpoint = endpointMap[tab] || "options";
 
     try {
-      const res = await fetch(`${API_BASE}/api/pricing/${endpoint}`, {
+      const res = await fetch(`${API_BASE}/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload || {}),
@@ -131,30 +132,29 @@ const UserState = ({ children }) => {
 
   // SUMMARY
   const fetchSummary = useCallback(
-    createFetcher("summary", `${API_BASE}/api/pricing/summary`),
+    createFetcher("summary", `${API_BASE}/summary`),
     [createFetcher]
   );
 
   // SIMULATION
   const runSimulation = useCallback(
-    createFetcher("simulation", `${API_BASE}/api/pricing/simulation`),
+    createFetcher("simulation", `${API_BASE}/simulation`),
     [createFetcher]
   );
 
   // TREND
-  const fetchTrend = useCallback(
-    createFetcher("trend", `${API_BASE}/api/trend/compute`),
-    [createFetcher]
-  );
+  const fetchTrend = useCallback(createFetcher("trend", `${API_BASE}/trend`), [
+    createFetcher,
+  ]);
 
   // TREND OPTIONS
   const fetchTrendOptions = useCallback(
-    createFetcher("trendOptions", `${API_BASE}/api/trend/options`),
+    createFetcher("trendOptions", `${API_BASE}/trend/options`),
     [createFetcher]
   );
 
   const getContribution = useCallback(
-    createFetcher("contribution", `${API_BASE}/api/pricing/contribution`),
+    createFetcher("contribution", `${API_BASE}/contribution`),
     [createFetcher]
   );
 

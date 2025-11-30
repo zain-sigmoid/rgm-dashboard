@@ -6,10 +6,10 @@ import React, {
   useContext,
   useRef,
 } from "react";
-import Summary from "./components/Summary";
-import Simulation from "./components/Simulation";
-import Trend from "./components/Trend";
-import Contribution from "./components/Contribution";
+import Summary from "./tabs/Summary";
+import Simulation from "./tabs/Simulation";
+import Trend from "./tabs/Trend";
+import Contribution from "./tabs/Contribution";
 import FilterSidebar from "./components/FilterSideBar";
 import { userContext } from "../../context/userContext";
 import {
