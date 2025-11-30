@@ -82,4 +82,9 @@ npm run dev
 ## Development & Conventions
 - Formatting: use `black` (backend) and `prettier` (frontend) to keep a consistent style.
 - Structure: prefer small, focused classes/modules; keep API and UI concerns separated.
+- Case Typing : 
+  - `snake_case` for file names, variables and functions
+  - `PascalCase` for class names
+  - `UPPER_CASE` for constants 
 - Logging: use Python’s `logging` (not `print`) and browser console logging only for debug-level details.
+

@@ -5,6 +5,7 @@ import {
   Route,
   useLocation,
 } from "react-router-dom";
+import UserState from "./context/UserState";
 import Home from "./pages/home/Home";
 import Toast from "./components/Toast";
 import Alert from "./components/Alert";
@@ -12,6 +13,9 @@ import Navbar from "./components/Navbar";
 import Scrolltotop from "./components/Scrolltotop";
 import Wrong from "./pages/Wrong";
 import About from "./pages/About";
+import PricingGlossary from "./pages/PricingGlossary";
+import PromotionGlossary from "./pages/PromotionGlossary";
+import Pricing from "./pages/pricing/Pricing";
 
 const AppShell = () => {
   const host = "http://127.0.0.1:8000/api";
@@ -45,31 +49,40 @@ const AppShell = () => {
 
   return (
     <>
-      <Navbar />
-      <Scrolltotop />
-      <Alert alert={alert} />
-      {toast && (
-        <Toast
-          content={toast.content}
-          copy={toast.copy}
-          msg={toast.msg}
-          variant={toast.variant}
-          onClose={handleToastClose}
-        />
-      )}
-      <Routes>
-        <Route exact path="/" element={<Home />}></Route>
-        <Route
-          exact
-          path="/:wrong"
-          element={<Wrong prop={{ showAlert, showToast }} />}
-        ></Route>
-        <Route
-          exact
-          path="/about"
-          element={<About prop={{ showAlert }} />}
-        ></Route>
-      </Routes>
+      <UserState prop={{ showAlert, showToast, host }}>
+        <Navbar />
+        <Scrolltotop />
+        <Alert alert={alert} />
+        {toast && (
+          <Toast
+            content={toast.content}
+            copy={toast.copy}
+            msg={toast.msg}
+            variant={toast.variant}
+            onClose={handleToastClose}
+          />
+        )}
+        <Routes>
+          <Route exact path="/" element={<Home />}></Route>
+          <Route exact path="/smart-pricing" element={<Pricing />} />
+          <Route exact path="/glossary/pricing" element={<PricingGlossary />} />
+          <Route
+            exact
+            path="/glossary/promotion"
+            element={<PromotionGlossary />}
+          />
+          <Route
+            exact
+            path="/:wrong"
+            element={<Wrong prop={{ showAlert, showToast }} />}
+          ></Route>
+          <Route
+            exact
+            path="/about"
+            element={<About prop={{ showAlert }} />}
+          ></Route>
+        </Routes>
+      </UserState>
     </>
   );
 };

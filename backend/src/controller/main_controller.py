@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from src.utility.logger import AppLogger
+from src.controller.price_controller import router as pricing_router
 
 AppLogger.init(
     level=logging.INFO,
@@ -24,6 +25,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(pricing_router)
 
 
 @app.get("/", tags=["Health"])

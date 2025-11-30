@@ -33,6 +33,31 @@ const Navbar = () => {
                 Home
               </Link>
             </li>
+            <li className="nav-item dropdown me-2 fs-5">
+              <a
+                className={`nav-link dropdown-toggle ${
+                  location.pathname === "/smart-pricing" ? "active" : ""
+                }`}
+                href="#"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Tools
+              </a>
+              <ul className="dropdown-menu">
+                <li>
+                  <Link className="dropdown-item" to="/smart-pricing">
+                    Smart Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/optimal-promotion">
+                    Optimal Promotion
+                  </Link>
+                </li>
+              </ul>
+            </li>
             <li className="nav-item me-2 fs-5">
               <Link
                 className={`nav-link ${
@@ -43,6 +68,31 @@ const Navbar = () => {
               >
                 About
               </Link>
+            </li>
+            <li className="nav-item dropdown me-2 fs-5">
+              <a
+                className={`nav-link dropdown-toggle ${
+                  location.pathname.startsWith("/glossary") ? "active" : ""
+                }`}
+                href="#"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Glossary
+              </a>
+              <ul className="dropdown-menu">
+                <li>
+                  <Link className="dropdown-item" to="/glossary/pricing">
+                    Pricing Glossary
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/glossary/promotion">
+                    Promotion Glossary
+                  </Link>
+                </li>
+              </ul>
             </li>
           </ul>
         </div>

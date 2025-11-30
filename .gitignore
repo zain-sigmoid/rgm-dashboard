@@ -19,3 +19,4 @@ dist/
 
 streamlit/
 backend/logs/
+backend/notebook.ipynb

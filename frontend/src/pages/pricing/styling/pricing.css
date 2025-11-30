@@ -1,0 +1,40 @@
+.tabs {
+  border-bottom: 1px solid #dcdcdc;
+}
+.tabs-wrapper {
+  /* border-bottom: 1px solid #dcdcdc; */
+  padding-bottom: 0; /* IMPORTANT */
+}
+.tab-head {
+  font-size: 1.5rem;
+  padding: 16px 0;
+  color: black;
+  position: relative;
+}
+
+.tab-item {
+  font-size: 1.1rem;
+  padding: 16px 0;
+  cursor: pointer;
+  color: #6c757d;
+  position: relative;
+}
+
+.tab-item.active {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.tab-item.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px; /* <— TOUCHES the bottom border */
+  height: 3px;
+  background-color: #2563eb;
+}
+
+.tab-item:hover {
+  color: #2563eb;
+}

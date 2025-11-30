@@ -1,0 +1,145 @@
+.glass-card {
+  border-radius: 12px;
+  padding: 18px 30px;
+}
+.grad-1 {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 180, 200, 0.7),
+    rgba(200, 220, 255, 0.9)
+  );
+}
+
+.grad-2 {
+  background: linear-gradient(135deg, rgb(245, 204, 188), #c1e2fa);
+}
+
+.grad-3 {
+  background: linear-gradient(135deg, rgb(215, 252, 195), rgb(182, 229, 246));
+}
+
+.grad-4 {
+  background: linear-gradient(
+    135deg,
+    rgba(248, 221, 168, 0.8),
+    rgba(249, 172, 166, 0.6)
+  );
+}
+
+/* .glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0px 12px 32px rgba(0, 0, 0, 0.12);
+} */
+
+.glass-icon {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.abstract-curtain-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Main curtain shape */
+.abstract-curtain-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    #1e3d7d 0%,
+    #335fbb 35%,
+    #6aa6ff 70%,
+    #ffffff 100%
+  );
+  /* This creates the curtain wedge from bottom-left to top-center */
+  clip-path: polygon(
+    0 100%,
+    /* bottom-left */ 0 0,
+    /* top-left */ 55% 0,
+    /* top-center-ish */ 30% 50%,
+    /* mid fold */ 0 75% /* back near bottom-left */
+  );
+  opacity: 0.9;
+}
+
+/* Secondary soft wave overlay for depth */
+.abstract-curtain-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(180, 210, 255, 0.4) 40%,
+    rgba(255, 255, 255, 0) 80%
+  );
+  clip-path: polygon(0 100%, 0 20%, 50% 0, 70% 25%, 35% 60%, 0 85%);
+  opacity: 0.7;
+}
+
+/* Optional: content sits above the curtain */
+.abstract-curtain-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* NEW: orange curtain from top-center to bottom-right */
+.abstract-curtain-bg-retailer {
+  position: relative;
+  overflow: hidden;
+}
+
+.abstract-curtain-bg-retailer::before,
+.abstract-curtain-bg-retailer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* main orange curtain */
+.abstract-curtain-bg-retailer::before {
+  background: linear-gradient(
+    135deg,
+    #f97316 0%,
+    #fb923c 35%,
+    #fed7aa 70%,
+    #ffffff 100%
+  );
+  clip-path: polygon(
+    45% 0,
+    /* top-center-ish */ 100% 0,
+    /* top-right */ 100% 100%,
+    /* bottom-right */ 70% 85%,
+    /* mid fold */ 55% 60%,
+    45% 25% /* back towards top-center */
+  );
+  opacity: 0.95;
+}
+
+/* lighter soft wave for depth */
+.abstract-curtain-bg-retailer::after {
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.7) 0%,
+    rgba(254, 215, 170, 0.7) 35%,
+    rgba(255, 255, 255, 0) 80%
+  );
+  clip-path: polygon(60% 0, 90% 0, 100% 80%, 75% 90%, 60% 65%, 55% 30%);
+  opacity: 0.8;
+}
+
+/* already used earlier – keep the same */
+.abstract-curtain-content {
+  position: relative;
+  z-index: 1;
+}
