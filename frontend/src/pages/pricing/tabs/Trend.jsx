@@ -17,7 +17,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { userContext } from "../../../context/userContext";
-import PlaceholderChart from "./PlaceholderChart";
+import PlaceholderChart from "../components/PlaceholderChart";
 
 const Trend = ({ filters }) => {
   const { trend, fetchTrend } = useContext(userContext);
@@ -212,6 +212,10 @@ const Trend = ({ filters }) => {
     <div className="py-4 pe-4">
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h4 className="mb-1">Trend Analysis</h4>
+        {trend.loading && (
+          <span className="badge bg-info text-dark">Loading...</span>
+        )}
+        {trend.error && <span className="badge bg-danger">{trend.error}</span>}
       </div>
 
       <div className="d-flex justify-content-between flex-row mb-3">

@@ -13,7 +13,7 @@ import {
   LabelList,
 } from "recharts";
 import { userContext } from "../../../context/userContext";
-import BarLabel from "./BarLabel";
+import BarLabel from "../components/BarLabel";
 import { formatPercent } from "../config/labelFormatter";
 import "../styling/style.css";
 
