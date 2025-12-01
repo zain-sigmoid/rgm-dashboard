@@ -32,7 +32,7 @@ const Trend = ({ filters }) => {
       brands: filters.brands || [],
       ppgs: filters.ppgs || [],
       retailers: filters.retailers || [],
-      years: filters.time_periods || [],
+      years: filters.years || [],
       months: null,
       date_freq: dateFreq,
       include_competitor:
@@ -58,8 +58,8 @@ const Trend = ({ filters }) => {
   }, [run]);
 
   const formatters = {
-    volume: (v) => (v / 1_000_000).toFixed(1) + "M",
-    revenue: (v) => (v / 1_000_000).toFixed(1) + "M",
+    volume: (v) => (v / 1_000_000).toFixed(2) + "M",
+    revenue: (v) => (v / 1_000_000).toFixed(2) + "M",
     price: (v) => v.toFixed(2),
     distribution: (v) => v.toFixed(0),
     competitor_price: (v) => v.toFixed(2),
@@ -134,6 +134,28 @@ const Trend = ({ filters }) => {
     const rightLabel = seriesByTab.rightLabel || "";
     const leftKey = seriesByTab.leftKey || "";
     const rightKey = seriesByTab.rightKey || "";
+    const leftValues = d.map((item) => item[seriesByTab.leftKey]);
+    const rightValues = d.map((item) => item[seriesByTab.rightKey]);
+
+    const minLeft = Math.min(...leftValues);
+    const maxLeft = Math.max(...leftValues);
+
+    const minRight = Math.min(...rightValues);
+    const maxRight = Math.max(...rightValues);
+
+    // Add visual padding (10% margin)
+    const pad = 0.6;
+
+    const leftDomain = [
+      minLeft - (maxLeft - minLeft) * pad,
+      maxLeft + (maxLeft - minLeft) * pad,
+    ];
+
+    const rightDomain = [
+      minRight - (maxRight - minRight) * pad,
+      maxRight + (maxRight - minRight) * pad,
+    ];
+
     if (!d.length) {
       return <PlaceholderChart />;
     }
@@ -147,6 +169,7 @@ const Trend = ({ filters }) => {
               yAxisId="left"
               tick={{ fontSize: 12 }}
               tickFormatter={formatters[leftKey]}
+              domain={leftDomain}
             >
               <Label
                 value={leftLabel}
@@ -159,6 +182,7 @@ const Trend = ({ filters }) => {
             <YAxis
               yAxisId="right"
               orientation="right"
+              domain={rightDomain}
               tick={{ fontSize: 12 }}
               tickFormatter={formatters[rightKey]}
             >
