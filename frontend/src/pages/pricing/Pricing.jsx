@@ -80,6 +80,7 @@ const Pricing = () => {
   const handleFilterChange = useCallback((name, values) => {
     setFilters((prev) => ({ ...prev, [name]: values }));
   }, []);
+
   const handleClearAll = useCallback(() => {
     setFilters((prev) => ({
       ...initialFilters,
@@ -109,7 +110,7 @@ const Pricing = () => {
         brands,
         ppgs,
         retailers,
-        time_periods,
+        years,
         competitor_manufacturers,
         competitor_brands,
         competitor_ppgs,
@@ -121,7 +122,7 @@ const Pricing = () => {
         brands,
         ppgs,
         retailers,
-        time_periods,
+        years,
         competitor_manufacturers,
         competitor_brands,
         competitor_ppgs,
@@ -132,8 +133,8 @@ const Pricing = () => {
       const { categories, manufacturers, retailers, brands, ppgs } = base;
       return { categories, manufacturers, retailers, brands, ppgs };
     }
-    const { categories, manufacturers, brands, ppgs, retailers } = base;
-    return { categories, manufacturers, brands, ppgs, retailers };
+    const { categories, manufacturers, retailers, time_periods } = base;
+    return { categories, manufacturers, retailers, time_periods };
   }, [filters, activeTab]);
 
   let fields = "";
