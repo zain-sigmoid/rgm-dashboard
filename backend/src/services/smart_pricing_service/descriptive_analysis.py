@@ -233,45 +233,49 @@ class DescriptiveAnalysis:
             else ["SurfaceCare"]
         )
 
-        # ---- Base scope: category / year / month / retailer filters ----
+        # ---- Base scope (for manu/brand/ppg/retailer) ----
         df_base = df.copy()
 
-        if filters.years:
-            df_base = df_base[df_base["year"].astype(str).isin(filters.years)]
+        # NOTE: do NOT filter by year here
         if filters.months:
             df_base = df_base[df_base["month"].isin(filters.months)]
         if filters.retailers:
             df_base = df_base[df_base["retailer_id"].isin(filters.retailers)]
 
-        # ---- 1) Manufacturer options (NOT filtered by selected manufacturers) ----
+        # ---- 1) Manufacturer options ----
         manufacturers = sorted(df_base["manufacturer_nm"].dropna().unique().tolist())
 
-        # ---- 2) Brand options (filtered by manufacturer, but NOT by brand itself) ----
+        # ---- 2) Brand options (filtered by manufacturer) ----
         df_brand_scope = df_base.copy()
         if filters.manufacturers:
             df_brand_scope = df_brand_scope[
                 df_brand_scope["manufacturer_nm"].isin(filters.manufacturers)
             ]
-
         brands = sorted(df_brand_scope["brand_nm"].dropna().unique().tolist())
 
-        # ---- 3) PPG options (filtered by manufacturer + brand) ----
+        # ---- 3) PPG options (filtered by brand) ----
         df_ppg_scope = df_brand_scope.copy()
         if filters.brands:
             df_ppg_scope = df_ppg_scope[df_ppg_scope["brand_nm"].isin(filters.brands)]
-
         ppgs = sorted(df_ppg_scope["ppg_nm"].dropna().unique().tolist())
 
-        # ---- 4) Retailer options (you can choose the dependency depth; here: manu+brand+ppg) ----
+        # ---- 4) Retailer options (filtered by ppg) ----
         df_retailer_scope = df_ppg_scope.copy()
         if filters.ppgs:
             df_retailer_scope = df_retailer_scope[
                 df_retailer_scope["ppg_nm"].isin(filters.ppgs)
             ]
-
         retailers = sorted(df_retailer_scope["retailer_id"].dropna().unique().tolist())
-        years = sorted(df_retailer_scope["year"].dropna().astype(str).unique().tolist())
-        months = sorted(df_retailer_scope["month"].dropna().unique().tolist())
+
+        # ---- Years & months options (do NOT filter by selected years) ----
+        df_time_scope = df.copy()
+        # you may optionally apply category / retailer filter here if you want them to depend
+        if filters.retailers:
+            df_time_scope = df_time_scope[
+                df_time_scope["retailer_id"].isin(filters.retailers)
+            ]
+        years = sorted(df_time_scope["year"].dropna().astype(str).unique().tolist())
+        months = sorted(df_time_scope["month"].dropna().unique().tolist())
 
         # ---- Competitor side ----
         competitor_manufacturers: List[str] = []

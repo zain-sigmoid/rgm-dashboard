@@ -77,7 +77,7 @@ export const trendFields = [
   },
   {
     label: "Year/Time Period",
-    name: "time_periods",
+    name: "years",
     icon: "fa-solid fa-clock",
   },
   // Competitor fields (used mainly by Trend; harmless for others)
