@@ -12,16 +12,15 @@ import Alert from "./components/Alert";
 import Navbar from "./components/Navbar";
 import Scrolltotop from "./components/Scrolltotop";
 import Wrong from "./pages/Wrong";
-import About from "./pages/About";
 import PricingGlossary from "./pages/PricingGlossary";
 import PromotionGlossary from "./pages/PromotionGlossary";
 import Pricing from "./pages/pricing/Pricing";
+import Promotion from "./pages/promotion/Promotion";
 
 const AppShell = () => {
   const host = "http://127.0.0.1:8000/api";
   const [alert, setAlert] = useState(null);
   const [toast, setToast] = useState(null);
-  const location = useLocation();
 
   const showAlert = (message, type) => {
     setAlert({
@@ -65,6 +64,11 @@ const AppShell = () => {
         <Routes>
           <Route exact path="/" element={<Home />}></Route>
           <Route exact path="/smart-pricing" element={<Pricing />} />
+          <Route
+            exact
+            path="/optimal-promotion"
+            element={<Promotion prop={{ showAlert, showToast }} />}
+          />
           <Route exact path="/glossary/pricing" element={<PricingGlossary />} />
           <Route
             exact
@@ -75,11 +79,6 @@ const AppShell = () => {
             exact
             path="/:wrong"
             element={<Wrong prop={{ showAlert, showToast }} />}
-          ></Route>
-          <Route
-            exact
-            path="/about"
-            element={<About prop={{ showAlert }} />}
           ></Route>
         </Routes>
       </UserState>
