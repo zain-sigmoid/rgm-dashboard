@@ -81,11 +81,19 @@ def simulation(
     try:
         filters = payload.filters or SimulationFilters()
         adjustments = SimulationAdjustments(
-            price_change_pct=payload.price_change_pct,
-            new_price=payload.new_price,
-            competitor_price_change_pct=payload.competitor_price_change_pct,
-            new_competitor_price=payload.new_competitor_price,
-            new_distribution=payload.new_distribution,
+            price_change_pct=payload.price_change_pct or 0.0,
+            new_price=payload.new_price if payload.new_price is not None else 0.0,
+            competitor_price_change_pct=payload.competitor_price_change_pct or 0.0,
+            new_competitor_price=(
+                payload.new_competitor_price
+                if payload.new_competitor_price is not None
+                else 0.0
+            ),
+            new_distribution=(
+                payload.new_distribution
+                if payload.new_distribution is not None
+                else 0.0
+            ),
         )
         return service.build_simulation(filters, adjustments)
     except FileNotFoundError as exc:
@@ -93,6 +101,9 @@ def simulation(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc),
         ) from exc
+    except Exception as e:
+        logger.error(f"Exception Occurred : {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/simulation/options", response_model=SimulationOptions)
