@@ -25,6 +25,21 @@
     rgba(249, 172, 166, 0.6)
   );
 }
+.grad-5 {
+  background: linear-gradient(
+    135deg,
+    rgba(204, 248, 168, 0.8),
+    rgba(249, 172, 166, 0.6)
+  );
+}
+
+.grad-6 {
+  background: linear-gradient(
+    135deg,
+    rgba(168, 248, 240, 0.8),
+    rgba(249, 166, 183, 0.6)
+  );
+}
 
 /* .glass-card:hover {
   transform: translateY(-4px);

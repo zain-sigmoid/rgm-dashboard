@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import { userContext } from "../../../context/userContext";
 import BarLabel from "../components/BarLabel";
-import { formatPercent } from "../config/labelFormatter";
+import { formatPercent } from "../../config/labelFormatter";
 import "../styling/style.css";
 
 const Summary = ({ filters }) => {
@@ -197,7 +197,7 @@ const Summary = ({ filters }) => {
                           tick={{ fontSize: 12 }}
                           textAnchor="end"
                         />
-                        <XAxis type="number" />
+                        <XAxis type="number" tick={{ fontSize: 12 }} />
                         <Tooltip />
                         <Legend />
                         <Bar
@@ -277,8 +277,11 @@ const Summary = ({ filters }) => {
               <h6 className="fw-bold mb-3 text-center">
                 Manufacturer Revenue Comparison
               </h6>
-              <div style={{ height: 320, overflow: "auto" }}>
-                <table className="table table-striped-columns mt-4">
+              <div
+                style={{ maxHeight: "320px" }}
+                className="table-responsive shadow-sm rounded"
+              >
+                <table className="table table-striped-columns">
                   <thead>
                     <tr>
                       {revenueTable?.columns?.map((col) => (
@@ -290,7 +293,10 @@ const Summary = ({ filters }) => {
                   </thead>
                   <tbody>
                     {revenueTable?.rows?.map((row, rowIdx) => (
-                      <tr key={rowIdx}>
+                      <tr
+                        key={rowIdx}
+                        className={`align-middle border border-top border-start-0 border-end-0 border-success border-2 border-opacity-50`}
+                      >
                         {revenueTable?.columns?.map((col) => (
                           <td key={col} style={{ fontSize: "14px" }}>
                             {col === "%Change 2023"
@@ -468,12 +474,15 @@ const Summary = ({ filters }) => {
         <div className="col-lg-6">
           <div className="card shadow-sm border h-100 px-4 py-2">
             <div className="card-body">
-              <h6 className="fw-bold text-center">
+              <h6 className="fw-bold text-center mb-4">
                 Retailer Revenue Comparison
               </h6>
-              <div style={{ height: 320, overflow: "auto" }}>
+              <div
+                style={{ maxHeight: "320px" }}
+                className="table-responsive shadow-sm rounded"
+              >
                 <table
-                  className="table table-striped-columns mt-2"
+                  className="table table-striped-columns"
                   style={{ borderCollapse: "collapse", width: "100%" }}
                 >
                   <thead>
@@ -485,9 +494,12 @@ const Summary = ({ filters }) => {
                       ))}
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="table-group-divider">
                     {revenueRetailerTable?.rows?.map((row, rowIdx) => (
-                      <tr key={rowIdx}>
+                      <tr
+                        key={rowIdx}
+                        className={`align-middle border border-top border-start-0 border-end-0 border-info border-2 border-opacity-50`}
+                      >
                         {revenueRetailerTable?.columns?.map((col) => (
                           <td key={col} style={{ fontSize: "14px" }}>
                             {row[col]}

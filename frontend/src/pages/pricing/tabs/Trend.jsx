@@ -18,6 +18,12 @@ import {
 } from "recharts";
 import { userContext } from "../../../context/userContext";
 import PlaceholderChart from "../components/PlaceholderChart";
+import MechanicsTick from "../../../components/charts/MechanicTick";
+import {
+  formatNumber,
+  formatPercent,
+  formatVolume,
+} from "../../config/labelFormatter";
 
 const Trend = ({ filters }) => {
   const { trend, fetchTrend } = useContext(userContext);
@@ -58,12 +64,12 @@ const Trend = ({ filters }) => {
   }, [run]);
 
   const formatters = {
-    volume: (v) => (v / 1_000_000).toFixed(2) + "M",
-    revenue: (v) => (v / 1_000_000).toFixed(2) + "M",
-    price: (v) => v.toFixed(2),
-    distribution: (v) => v.toFixed(0),
-    competitor_price: (v) => v.toFixed(2),
-    competitor_distribution: (v) => v.toFixed(0),
+    volume: (v) => formatVolume(v, 1),
+    revenue: (v) => formatVolume(v, 1),
+    price: (v) => formatNumber(v, 2),
+    distribution: (v) => formatNumber(v, 0),
+    competitor_price: (v) => formatNumber(v, 2),
+    competitor_distribution: (v) => formatNumber(v, 0),
   };
 
   const seriesByTab = useMemo(() => {
@@ -164,7 +170,7 @@ const Trend = ({ filters }) => {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={d}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+            <XAxis dataKey="date" tick={<MechanicsTick />} />
             <YAxis
               yAxisId="left"
               tick={{ fontSize: 12 }}

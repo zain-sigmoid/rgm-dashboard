@@ -17,8 +17,8 @@ import {
   trendFields,
   simulationFields,
   contributionFields,
-} from "./config/fields";
-import { buildFields } from "./config/buildFields";
+} from "../config/pricingFields";
+import { buildFields } from "../config/buildFields";
 import "./styling/pricing.css";
 
 const Pricing = () => {
