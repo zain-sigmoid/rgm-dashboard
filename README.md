@@ -1,5 +1,5 @@
 # RGM Dashboard
-RGM dashboard for pricing and promotion analysis.
+RGM Dashboard for pricing, promotion, and smart‑pricing analysis. The project ships a FastAPI backend and a Vite/React frontend with multiple analytic tabs (pricing, promotion, contribution, simulation, trend). Streamlit legacy pages remain on a separate branch for reference.
 
 ## Streamlit App
 - Switch to the Streamlit branch: `git checkout streamlit`.
@@ -79,12 +79,52 @@ npm run dev
 - Default URL: http://localhost:5173
 - Press `q` or `Ctrl+C` in the terminal to stop the server.
 
-## Development & Conventions
-- Formatting: use `black` (backend) and `prettier` (frontend) to keep a consistent style.
-- Structure: prefer small, focused classes/modules; keep API and UI concerns separated.
-- Case Typing : 
-  - `snake_case` for file names, variables and functions
-  - `PascalCase` for class names
-  - `UPPER_CASE` for constants 
-- Logging: use Python’s `logging` (not `print`) and browser console logging only for debug-level details.
+## Frontend (React/Vite) – Feature Overview
 
+Pricing suite:
+- **Summary**: KPI cards and revenue/fair-share tables by manufacturer and retailer. Filters: categories, manufacturers, time periods, retailers.
+- **Simulation**: What-if engine for price/competitor price/distribution changes. Dual bar charts (volume/revenue), tables (results + context), and adjustable sliders with manual overrides.
+- **Contribution**: Elasticities (price, cross-price, distribution) and contribution-by-driver waterfall; filters mirror pricing filters.
+- **Trend / Descriptive**: Trend analysis endpoints exposed; renders line/area style outputs (see `trend` tab wiring).
+
+Promotion suite:
+- **Performance**: Promotion performance tables and KPIs by retailer/segment/PPG/promo tactic.
+- **Past Promotion**: Dual-line baseline vs. volume, combo charts (uplift vs. depth/mechanic/tactic), KPI cards, and drilldown table.
+- **Promotion Simulation**: Multi-event simulator; per-event filters (promo tactic, offer type, offer mechanic), ROI per event, baseline vs. promo chart, pie split, and drilldown table. State is persisted in context so switching tabs keeps your current run until “New Simulation”.
+
+## Backend (FastAPI) – Key Endpoints
+- `POST /api/pricing/summary` + `/options`
+- `POST /api/pricing/simulation` + `/simulation/options`
+- `POST /api/pricing/contribution`
+- `POST /api/pricing/trend` + `/trend/options`
+- `POST /api/promotion/performance` + `/performance/options`
+- `POST /api/promotion/past-promotion` + `/past-promotion/options`
+- `POST /api/promotion/simulation` + `/simulation/options`
+
+
+## Running the stack together
+- Start backend: `uvicorn src.controller.main_controller:app --port 8000 --reload`
+- Start frontend: `npm run dev` from `frontend/`
+- Configure API base URLs via `.env` (e.g., `VITE_PRICING_API`, `VITE_PROMOTION_API`).
+
+## Folder Structure
+```
+RGM_Dashboard/
+├─ backend/                     # FastAPI services, controllers, models
+│  ├─ src/controller/           # API routers
+│  ├─ src/services/             # Smart pricing, promotion, trend services
+│  ├─ src/model/                # Pydantic models
+│  └─ data/                     # CSV inputs
+├─ frontend/                    # React + Vite frontend
+│  ├─ src/pages/                # Pricing & promotion tabs, components
+│  ├─ src/context/              # Global state (UserState, userContext)
+│  ├─ src/components/           # Shared UI (Navbar, Spinner, etc.)
+│  └─ public/                   # Static assets
+├─ README.md
+├─ frontend/README.md
+└─ package.json / requirements.txt
+```
+
+## License
+This software is proprietary and confidential to Sigmoid Analytics, Inc.
+Use, modification, or distribution outside Sigmoid is strictly prohibited.
