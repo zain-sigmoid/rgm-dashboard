@@ -7,51 +7,77 @@ const BarLabel = (props) => {
     value,
     orientation = "vertical", // "vertical" | "horizontal"
     formatter = (v) => v.toFixed(2),
-    smallThreshold = 40, // px; tweak to taste
+    smallHeightThreshold = 40,
+    smallWidthThreshold = 50,
+    fontSize = 10,
   } = props;
 
   if (value == null) return null;
 
   const label = formatter(value);
 
-  // Use absolute size so negative bars still behave correctly
-  const size =
-    orientation === "horizontal" ? Math.abs(width) : Math.abs(height);
-  const barTooSmall = size < smallThreshold;
+  const absWidth = Math.abs(width);
+  const absHeight = Math.abs(height);
+  const isPositive = value >= 0;
+
+  const isShort =
+    orientation === "horizontal"
+      ? absWidth < smallHeightThreshold
+      : absHeight < smallHeightThreshold;
+
+  const isNarrow = absWidth < smallWidthThreshold;
 
   let posX;
   let posY;
-  let textAnchor;
-  let fill;
+  let textAnchor = "middle";
+  let fill = "#ffffff";
+  let dy = 4;
 
   if (orientation === "horizontal") {
-    // Bar grows along X
+    // center of the bar vertically
     posY = y + height / 2;
 
-    if (barTooSmall) {
-      // outside-right
+    if (isShort || isNarrow) {
+      // outside to the right
       posX = x + width + 4;
       textAnchor = "start";
       fill = "#000000";
+      dy = 4;
     } else {
       // inside-right
       posX = x + width - 4;
       textAnchor = "end";
       fill = "#ffffff";
+      dy = 4;
     }
   } else {
-    // orientation === "vertical" – bar grows along Y (up for positive, down for negative)
+    // VERTICAL
+
+    // For negative bars, height is negative and y is at baseline.
+    // Compute actual top of bar and its center:
+    const barTop = height >= 0 ? y : y + height;
+    const barCenterY = barTop + absHeight / 2;
+
     posX = x + width / 2;
     textAnchor = "middle";
 
-    if (barTooSmall) {
-      // above for positive bars, below for negative bars
-      posY = value >= 0 ? y - 4 : y + height + 12;
+    if (isShort || isNarrow) {
+      // bar too thin/short → place label OUTSIDE, but keep fill logic smart
+      if (isPositive) {
+        posY = barTop - 8; // above positive bar
+      } else {
+        posY = barTop + absHeight + 8; // below negative bar
+      }
+      // If you ALWAYS want white, keep this:
+      // fill = "#ffffff";
+      // If you want outside labels black:
       fill = "#000000";
+      dy = 0;
     } else {
-      // inside the bar (always white)
-      posY = y + height / 2;
-      fill = "#ffffff";
+      // Inside bar center (works for positive and negative)
+      posY = barCenterY;
+      fill = "#ffffff"; // always white inside bar
+      dy = 4;
     }
   }
 
@@ -59,13 +85,15 @@ const BarLabel = (props) => {
     <text
       x={posX}
       y={posY}
-      dy={4}
-      fontSize={10}
+      dy={dy}
+      fontSize={fontSize}
       textAnchor={textAnchor}
       fill={fill}
+      dominantBaseline="middle"
     >
       {label}
     </text>
   );
 };
+
 export default BarLabel;
