@@ -1,0 +1,108 @@
+#promo .glass-card {
+  border-radius: 12px;
+  padding: 18px 30px;
+}
+
+#promo .grad-1 {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 180, 200, 0.7),
+    rgba(200, 220, 255, 0.9)
+  );
+}
+
+#promo .grad-2 {
+  background: linear-gradient(135deg, rgb(245, 204, 188), #c1e2fa);
+}
+
+#promo .grad-3 {
+  background: linear-gradient(135deg, rgb(169, 250, 126), rgb(182, 229, 246));
+}
+
+#promo .grad-4 {
+  background: linear-gradient(
+    135deg,
+    rgba(246, 106, 169, 0.8),
+    rgba(166, 249, 228, 0.6)
+  );
+}
+
+#promo .grad-5 {
+  background: linear-gradient(
+    135deg,
+    rgba(204, 248, 168, 0.8),
+    rgba(249, 172, 166, 0.6)
+  );
+}
+
+#promo .grad-6 {
+  background: linear-gradient(
+    135deg,
+    rgba(168, 248, 240, 0.8),
+    rgba(249, 166, 183, 0.6)
+  );
+}
+
+#promo .table-sticky-header thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+#sim .table-sticky-header thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* Wrapper when background is active */
+.abstract-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+/* ===== SHAPE 1 ===== */
+.shape-1 {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  bottom: 5%;
+  left: 10%;
+  background: radial-gradient(
+    circle,
+    rgba(100, 200, 255, 0.2) 0%,
+    rgba(200, 100, 255, 0.2) 100%
+  );
+  border-radius: 50% 0 50% 50%;
+  transform: rotate(45deg);
+  opacity: 0.7;
+}
+
+/* ===== SHAPE 2 ===== */
+.shape-2 {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  top: 15%;
+  left: 2%;
+  background: rgba(13, 110, 253, 0.25); /* bootstrap primary with opacity */
+  border-radius: 50%;
+  transform: rotate(45deg);
+}
+
+/* ===== SHAPE 3 ===== */
+.shape-3 {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  bottom: 10%;
+  right: 5%;
+  background: linear-gradient(
+    225deg,
+    rgba(255, 100, 100, 0.1) 0%,
+    rgba(100, 255, 100, 0.1) 100%
+  );
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  transform: rotate(-15deg);
+  opacity: 1;
+}
