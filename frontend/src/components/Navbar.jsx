@@ -58,17 +58,6 @@ const Navbar = () => {
                 </li>
               </ul>
             </li>
-            <li className="nav-item me-2 fs-5">
-              <Link
-                className={`nav-link ${
-                  location.pathname === "/about" ? "active" : ""
-                }`}
-                aria-current="page"
-                to="/about"
-              >
-                About
-              </Link>
-            </li>
             <li className="nav-item dropdown me-2 fs-5">
               <a
                 className={`nav-link dropdown-toggle ${

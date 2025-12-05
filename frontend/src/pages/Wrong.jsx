@@ -8,7 +8,6 @@ const Wrong = () => {
   const [pageExist, setPageExist] = useState(true);
   const [seconds, setSeconds] = useState(10);
   const pages = ["about"];
-  console.log(pageExist);
 
   useEffect(() => {
     if (!pages.includes(wrong)) {
