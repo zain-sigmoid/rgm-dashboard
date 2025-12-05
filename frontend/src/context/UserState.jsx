@@ -2,9 +2,13 @@ import React, { useCallback, useMemo, useReducer } from "react";
 import PropTypes from "prop-types";
 import { userContext } from "./userContext";
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE?.replace(/\/$/, "") ||
+const PRICING_API =
+  import.meta.env.VITE_PRICING_API?.replace(/\/$/, "") ||
   "http://127.0.0.1:8000/api/pricing";
+
+const PROMOTION_API =
+  import.meta.env.VITE_PROMOTION_API?.replace(/\/$/, "") ||
+  "http://127.0.0.1:8000/api/promotion";
 
 const initialState = {
   options: { data: null, loading: false, error: null, fetched: false },
@@ -13,6 +17,15 @@ const initialState = {
   trend: { data: null, loading: false, error: null, fetched: false },
   trendOptions: { data: null, loading: false, error: null, fetched: false },
   contribution: { data: null, loading: false, error: null, fetched: false },
+  performance: { data: null, loading: false, error: null, fetched: false },
+  promoOptions: { data: null, loading: false, error: null, fetched: false },
+  pastPromotion: { data: null, loading: false, error: null, fetched: false },
+  promoSimulation: { data: null, loading: false, error: null, fetched: false },
+  promoSimState: {
+    numEvents: 0,
+    eventFilters: [],
+    globalFilters: {},
+  },
 };
 
 function reducer(state, action) {
@@ -57,6 +70,33 @@ function reducer(state, action) {
       };
     }
 
+    case "SET_PROMO_SIM_STATE": {
+      return {
+        ...state,
+        promoSimState: {
+          ...state.promoSimState,
+          ...(action.payload || {}),
+        },
+      };
+    }
+
+    case "RESET_PROMO_SIMULATION": {
+      return {
+        ...state,
+        promoSimulation: {
+          data: null,
+          loading: false,
+          error: null,
+          fetched: false,
+        },
+        promoSimState: {
+          numEvents: 0,
+          eventFilters: [],
+          globalFilters: {},
+        },
+      };
+    }
+
     default:
       return state;
   }
@@ -69,6 +109,7 @@ const UserState = ({ children }) => {
   const createFetcher = useCallback(
     (key, url) =>
       async (payload = {}) => {
+        console.log("simulation userstate", payload);
         dispatch({ type: "FETCH_START", key });
         try {
           const res = await fetch(url, {
@@ -95,11 +136,43 @@ const UserState = ({ children }) => {
     []
   );
 
-  // OPTIONS (special because endpoint depends on tab)
+  const runPromotionSimulation = useCallback(async (payload = {}) => {
+    const key = "promoSimulation";
+    dispatch({ type: "FETCH_START", key });
+    try {
+      const res = await fetch(`${PROMOTION_API}/simulation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload || {}),
+      });
+
+      if (!res.ok) throw new Error(`${key} request failed: ${res.statusText}`);
+
+      console.log("promo simulation response recived", res);
+      const data = await res.json();
+      dispatch({ type: "FETCH_SUCCESS", key, payload: data });
+      return data;
+    } catch (err) {
+      dispatch({
+        type: "FETCH_ERROR",
+        key,
+        payload: err.message || "Unknown error",
+      });
+      return null;
+    }
+  }, []);
+
+  const setPromoSimulationState = useCallback((payload) => {
+    dispatch({ type: "SET_PROMO_SIM_STATE", payload });
+  }, []);
+
+  const resetPromotionSimulation = useCallback(() => {
+    dispatch({ type: "RESET_PROMO_SIMULATION" });
+  }, []);
+
   const fetchOptions = useCallback(async (payload = {}, tab = "summary") => {
     const key = "options";
     dispatch({ type: "FETCH_START", key });
-
     const endpointMap = {
       summary: "options",
       simulation: "simulation/options",
@@ -109,7 +182,7 @@ const UserState = ({ children }) => {
     const endpoint = endpointMap[tab] || "options";
 
     try {
-      const res = await fetch(`${API_BASE}/${endpoint}`, {
+      const res = await fetch(`${PRICING_API}/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload || {}),
@@ -130,31 +203,84 @@ const UserState = ({ children }) => {
     }
   }, []);
 
+  const fetchPromoOptions = useCallback(
+    async (payload = {}, tab = "summary") => {
+      const key = "promoOptions";
+      dispatch({ type: "FETCH_START", key });
+      console.log("fetching promot options for", tab);
+      const endpointMap = {
+        past_promotion: "past-promotion/options",
+        simulation: "simulation/options",
+        performance: "performance/options",
+      };
+
+      const endpoint = endpointMap[tab] || "past-promotion/options";
+
+      try {
+        const res = await fetch(`${PROMOTION_API}/${endpoint}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload || {}),
+        });
+
+        if (!res.ok)
+          throw new Error(`Options request failed: ${res.statusText}`);
+
+        const data = await res.json();
+        dispatch({ type: "FETCH_SUCCESS", key, payload: data });
+        return data;
+      } catch (err) {
+        dispatch({
+          type: "FETCH_ERROR",
+          key,
+          payload: err.message || "Unknown error",
+        });
+        return null;
+      }
+    },
+    []
+  );
+
   // SUMMARY
   const fetchSummary = useCallback(
-    createFetcher("summary", `${API_BASE}/summary`),
+    createFetcher("summary", `${PRICING_API}/summary`),
     [createFetcher]
   );
 
   // SIMULATION
   const runSimulation = useCallback(
-    createFetcher("simulation", `${API_BASE}/simulation`),
+    createFetcher("simulation", `${PRICING_API}/simulation`),
     [createFetcher]
   );
 
   // TREND
-  const fetchTrend = useCallback(createFetcher("trend", `${API_BASE}/trend`), [
-    createFetcher,
-  ]);
+  const fetchTrend = useCallback(
+    createFetcher("trend", `${PRICING_API}/trend`),
+    [createFetcher]
+  );
 
   // TREND OPTIONS
   const fetchTrendOptions = useCallback(
-    createFetcher("trendOptions", `${API_BASE}/trend/options`),
+    createFetcher("trendOptions", `${PRICING_API}/trend/options`),
     [createFetcher]
   );
 
   const getContribution = useCallback(
-    createFetcher("contribution", `${API_BASE}/contribution`),
+    createFetcher("contribution", `${PRICING_API}/contribution`),
+    [createFetcher]
+  );
+
+  // ================================================================
+  // Promotion Context
+  // ================================================================
+
+  const fetchPerformance = useCallback(
+    createFetcher("performance", `${PROMOTION_API}/performance`),
+    [createFetcher]
+  );
+
+  const fetchPastPromotion = useCallback(
+    createFetcher("pastPromotion", `${PROMOTION_API}/past-promotion`),
     [createFetcher]
   );
 
@@ -166,12 +292,23 @@ const UserState = ({ children }) => {
       trend: state.trend,
       trendOptions: state.trendOptions,
       contribution: state.contribution,
+      performance: state.performance,
+      promoOptions: state.promoOptions,
+      pastPromotion: state.pastPromotion,
+      promoSimulation: state.promoSimulation,
+      promoSimState: state.promoSimState,
       fetchOptions,
       fetchSummary,
       runSimulation,
       fetchTrend,
       fetchTrendOptions,
       getContribution,
+      fetchPerformance,
+      fetchPromoOptions,
+      fetchPastPromotion,
+      runPromotionSimulation,
+      setPromoSimulationState,
+      resetPromotionSimulation,
     }),
     [
       state,
@@ -181,6 +318,12 @@ const UserState = ({ children }) => {
       fetchTrend,
       fetchTrendOptions,
       getContribution,
+      fetchPerformance,
+      fetchPromoOptions,
+      fetchPastPromotion,
+      runPromotionSimulation,
+      setPromoSimulationState,
+      resetPromotionSimulation,
     ]
   );
 

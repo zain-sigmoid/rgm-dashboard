@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
 from pydantic import BaseModel, Field
 
 from src.utility.logger import AppLogger

@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import { userContext } from "../../../context/userContext";
 import BarLabel from "../components/BarLabel";
-import { formatPercent } from "../config/labelFormatter";
+import { formatPercent } from "../../config/labelFormatter";
 import "../styling/style.css";
 
 const Summary = ({ filters }) => {
@@ -32,8 +32,6 @@ const Summary = ({ filters }) => {
   const revenueRetailerTable = summary.data?.revenue_by_retailer_table ?? [];
   const revenueRetailer = summary.data?.revenue_by_retailer ?? [];
   const revenueRetailerChart = summary.data?.revenue_by_retailer_chart ?? [];
-
-  console.log(summary);
 
   const revenueChartData = useMemo(
     () =>
@@ -105,14 +103,29 @@ const Summary = ({ filters }) => {
 
       {/* KPIs Cards */}
       <div className="row g-3 mb-4">
-        {cards.map((card, idx) => (
-          <div className="col-md-3" key={card.label}>
-            <div className={`glass-card h-100 ${grads[idx % grads.length]}`}>
-              <div className="fw-semibold small">{card.label}</div>
-              <div className="fw-bold fs-1">{card.value}</div>
-            </div>
-          </div>
-        ))}
+        {cards.length > 0
+          ? cards.map((card, idx) => (
+              <div className="col-md-3" key={card.label}>
+                <div
+                  className={`glass-card h-100 ${grads[idx % grads.length]}`}
+                >
+                  <div className="fw-semibold small">{card.label}</div>
+                  <div className="fw-bold fs-1">{card.value}</div>
+                </div>
+              </div>
+            ))
+          : [...Array(4)].map((_, idx) => (
+              <div className="col-md-3" key={idx}>
+                <div
+                  className={`glass-card h-100 ${grads[idx % grads.length]}`}
+                >
+                  <div className="placeholder-glow">
+                    <div className="placeholder placeholder-sm col-6 mb-2 d-block"></div>
+                    <div className="placeholder placeholder-xs col-4 d-block"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
       </div>
 
       <div className="card shadow-sm border p-4 my-5 abstract-curtain-bg">
@@ -184,7 +197,7 @@ const Summary = ({ filters }) => {
                           tick={{ fontSize: 12 }}
                           textAnchor="end"
                         />
-                        <XAxis type="number" />
+                        <XAxis type="number" tick={{ fontSize: 12 }} />
                         <Tooltip />
                         <Legend />
                         <Bar
@@ -264,8 +277,11 @@ const Summary = ({ filters }) => {
               <h6 className="fw-bold mb-3 text-center">
                 Manufacturer Revenue Comparison
               </h6>
-              <div style={{ height: 320, overflow: "auto" }}>
-                <table className="table table-striped-columns mt-4">
+              <div
+                style={{ maxHeight: "320px" }}
+                className="table-responsive shadow-sm rounded"
+              >
+                <table className="table table-striped-columns">
                   <thead>
                     <tr>
                       {revenueTable?.columns?.map((col) => (
@@ -277,7 +293,10 @@ const Summary = ({ filters }) => {
                   </thead>
                   <tbody>
                     {revenueTable?.rows?.map((row, rowIdx) => (
-                      <tr key={rowIdx}>
+                      <tr
+                        key={rowIdx}
+                        className={`align-middle border border-top border-start-0 border-end-0 border-success border-2 border-opacity-50`}
+                      >
                         {revenueTable?.columns?.map((col) => (
                           <td key={col} style={{ fontSize: "14px" }}>
                             {col === "%Change 2023"
@@ -455,12 +474,15 @@ const Summary = ({ filters }) => {
         <div className="col-lg-6">
           <div className="card shadow-sm border h-100 px-4 py-2">
             <div className="card-body">
-              <h6 className="fw-bold text-center">
+              <h6 className="fw-bold text-center mb-4">
                 Retailer Revenue Comparison
               </h6>
-              <div style={{ height: 320, overflow: "auto" }}>
+              <div
+                style={{ maxHeight: "320px" }}
+                className="table-responsive shadow-sm rounded"
+              >
                 <table
-                  className="table table-striped-columns mt-2"
+                  className="table table-striped-columns"
                   style={{ borderCollapse: "collapse", width: "100%" }}
                 >
                   <thead>
@@ -472,9 +494,12 @@ const Summary = ({ filters }) => {
                       ))}
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="table-group-divider">
                     {revenueRetailerTable?.rows?.map((row, rowIdx) => (
-                      <tr key={rowIdx}>
+                      <tr
+                        key={rowIdx}
+                        className={`align-middle border border-top border-start-0 border-end-0 border-info border-2 border-opacity-50`}
+                      >
                         {revenueRetailerTable?.columns?.map((col) => (
                           <td key={col} style={{ fontSize: "14px" }}>
                             {row[col]}

@@ -4,6 +4,7 @@ import React, {
   useMemo,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import PropTypes from "prop-types";
 import {
@@ -16,27 +17,35 @@ import {
   XAxis,
   YAxis,
   LabelList,
+  Label,
 } from "recharts";
 import { userContext } from "../../../context/userContext";
+import BarLabel from "../../pricing/components/BarLabel";
+import { formatVolume } from "../../config/labelFormatter";
+import "../styling/style.css";
 
 const Simulation = ({ filters }) => {
+  const grads = ["grad-1", "grad-2", "grad-3", "grad-4", "grad-5", "grad-6"];
   const { simulation, runSimulation } = useContext(userContext);
   const [priceChange, setPriceChange] = useState(0);
-  const [newPrice, setNewPrice] = useState("");
+  const [newPrice, setNewPrice] = useState(0.0);
   const [compChange, setCompChange] = useState(0);
-  const [newCompPrice, setNewCompPrice] = useState("");
-  const [newDistribution, setNewDistribution] = useState("");
+  const [newCompPrice, setNewCompPrice] = useState(0.0);
+  const [newDistribution, setNewDistribution] = useState(0.0);
+
+  console.log(newPrice, newCompPrice, newDistribution);
 
   const cards = simulation.data?.summary_cards ?? [];
   const volumeBars = simulation.data?.volume_bars;
   const revenueBars = simulation.data?.revenue_bars;
+  const table = simulation.data?.table;
+  const contextTable = simulation.data?.context_table;
   const context = simulation.data?.context || {};
 
   const basePrice = context.base_price || 0;
   const baseCompPrice = context.base_comp_price || 0;
   const baseDistribution = context.base_distribution || 0;
-
-  console.log(simulation);
+  const lastFiltersRef = useRef("");
 
   const mappedFilters = useMemo(
     () => ({
@@ -55,9 +64,24 @@ const Simulation = ({ filters }) => {
     ]
   );
 
+  const mappedFiltersKey = useMemo(
+    () => JSON.stringify(mappedFilters),
+    [mappedFilters]
+  );
+
   useEffect(() => {
-    runSimulation({ filters: mappedFilters });
-  }, [mappedFilters, runSimulation]);
+    if (mappedFiltersKey !== lastFiltersRef.current) {
+      lastFiltersRef.current = mappedFiltersKey;
+      runSimulation({
+        filters: mappedFilters,
+        price_change_pct: 0,
+        new_price: 0.0,
+        competitor_price_change_pct: 0,
+        new_competitor_price: 0.0,
+        new_distribution: 0.0,
+      });
+    }
+  }, [mappedFiltersKey, mappedFilters, runSimulation]);
 
   const volumeChartData = useMemo(() => volumeBars?.bars ?? [], [volumeBars]);
   const revenueChartData = useMemo(
@@ -85,6 +109,7 @@ const Simulation = ({ filters }) => {
 
   // -------- Competitor card logic --------
   const handleCompSliderChange = (value) => {
+    console.log("new price", value);
     setCompChange(value);
     if (baseCompPrice != null) {
       const updated = baseCompPrice * (1 + value / 100);
@@ -93,6 +118,7 @@ const Simulation = ({ filters }) => {
   };
 
   const handleNewCompPriceInputChange = (value) => {
+    console.log("new comp price", value);
     setNewCompPrice(value);
     if (baseCompPrice != null && value !== "") {
       const numeric = parseFloat(value);
@@ -105,28 +131,17 @@ const Simulation = ({ filters }) => {
 
   const handleReset = useCallback(() => {
     setPriceChange(0);
-    setNewPrice(basePrice != null ? basePrice.toFixed(2) : "");
+    setNewPrice(basePrice != null ? basePrice.toFixed(2) : 0.0);
     setCompChange(0);
-    setNewCompPrice(baseCompPrice != null ? baseCompPrice.toFixed(2) : "");
+    setNewCompPrice(baseCompPrice != null ? baseCompPrice.toFixed(2) : 0.0);
     setNewDistribution(
-      baseDistribution != null ? baseDistribution.toFixed(0) : ""
+      baseDistribution != null ? baseDistribution.toFixed(2) : 0.0
     );
-
-    // Run simulation with baseline values
-    runSimulation({
-      filters: mappedFilters,
-      price_change_pct: 0,
-      new_price: null,
-      competitor_price_change_pct: 0,
-      new_competitor_price: null,
-      new_distribution: null,
-    });
   }, [
     basePrice,
     baseCompPrice,
     baseDistribution,
     mappedFilters,
-    runSimulation,
   ]);
 
   // When filters change and new base values arrive, default the sliders/inputs to current values
@@ -135,6 +150,7 @@ const Simulation = ({ filters }) => {
   }, [handleReset]);
 
   const handleNewDistributionInputChange = (value) => {
+    console.log("new dist value", value);
     setNewDistribution(value);
   };
 
@@ -147,23 +163,17 @@ const Simulation = ({ filters }) => {
         ppgs: filters?.ppgs || [],
         retailers: filters?.retailers || [],
       };
-
-      const manualPrice =
-        Number.isFinite(parseFloat(newPrice)) && parseFloat(newPrice) > 0;
-      const manualComp =
-        Number.isFinite(parseFloat(newCompPrice)) &&
-        parseFloat(newCompPrice) > 0;
-      const manualDist =
-        Number.isFinite(parseFloat(newDistribution)) &&
-        parseFloat(newDistribution) >= 0;
+      const numericPrice = Number.parseFloat(newPrice);
+      const numericComp = Number.parseFloat(newCompPrice);
+      const numericDist = Number.parseFloat(newDistribution);
 
       const payload = {
         filters: mappedFilters,
         price_change_pct: priceChange,
-        new_price: manualPrice ? parseFloat(newPrice) : null,
+        new_price: Number.isFinite(numericPrice) ? numericPrice : 0.0,
         competitor_price_change_pct: compChange,
-        new_competitor_price: manualComp ? parseFloat(newCompPrice) : null,
-        new_distribution: manualDist ? parseFloat(newDistribution) : null,
+        new_competitor_price: Number.isFinite(numericComp) ? numericComp : 0.0,
+        new_distribution: Number.isFinite(numericDist) ? numericDist : 0.0,
       };
 
       runSimulation(payload);
@@ -181,6 +191,115 @@ const Simulation = ({ filters }) => {
       runSimulation,
     ]
   );
+
+  const renderBarCard = useCallback((data, title, color) => {
+    if (!data?.length) return null;
+    return (
+      <div className="card shadow-sm border h-100 pe-4 py-2">
+        <div className="card-body">
+          <h6 className="fw-bold mb-3">{title}</h6>
+          <div style={{ height: 320 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  type="number"
+                  tickFormatter={(v) => formatVolume(v, 0)}
+                  tick={{ fontSize: "12px" }}
+                >
+                  <Label
+                    value="volume"
+                    angle={0}
+                    position="insideBottom"
+                    offset={0}
+                    style={{ textAnchor: "middle", fontSize: "12px" }}
+                  />
+                </XAxis>
+                <YAxis
+                  type="category"
+                  dataKey="label"
+                  width={120}
+                  tick={{ fontSize: "12px" }}
+                />
+                <Tooltip formatter={(v) => formatVolume(v, 5)} />
+                <Legend />
+                <Bar
+                  dataKey="value"
+                  fill={color}
+                  barSize={40}
+                  radius={[0, 6, 6, 0]}
+                >
+                  <LabelList
+                    dataKey="value"
+                    content={
+                      <BarLabel
+                        fontSize={14}
+                        formatter={(v) => formatVolume(v, 2)}
+                      />
+                    }
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    );
+  }, []);
+
+  const renderTable = (tableData, title, bg = "info") => {
+    if (!tableData?.columns?.length) return null;
+    return (
+      // <div className="card shadow-sm border h-100 p-3">
+      //   <div className="card-body">
+      //     <div className="d-flex justify-content-between align-items-center mb-2">
+      //       <h6 className="mb-0">{title}</h6>
+      //       <span className="badge bg-light text-secondary">Table</span>
+      //     </div>
+
+      //   </div>
+      // </div>
+      <div
+        className="table-responsive shadow-sm rounded"
+        style={{ maxHeight: "500px" }}
+      >
+        <table className="table table-sm table-striped-columns table-sticky-header">
+          <thead style={{ fontSize: "15px", paddingLeft: "10px" }}>
+            <tr className={`table-${bg}`}>
+              <th scope="col">#</th>
+              {tableData.columns.map((col) => (
+                <th key={col} className="text-capitalize">
+                  {col.replace(/_/g, " ")}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody
+            style={{ fontSize: "12px", paddingLeft: "10px" }}
+            className="table-group-divider"
+          >
+            {tableData.rows?.length ? (
+              tableData.rows.map((row, idx) => (
+                <tr
+                  key={idx}
+                  className={`align-middle border border-top border-start-0 border-end-0 border-${bg} border-2 border-opacity-50`}
+                >
+                  <th scope="row">{idx + 1}</th>
+                  {tableData.columns.map((col) => (
+                    <td key={col}>{row[col]}</td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={tableData.columns.length}>No data</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   return (
     <div className="py-4 pe-4">
@@ -340,7 +459,7 @@ const Simulation = ({ filters }) => {
                   <div className="text-muted small">Current</div>
                   <div className="fs-5 fw-bold">
                     {baseDistribution != null
-                      ? baseDistribution.toFixed(0)
+                      ? baseDistribution.toFixed(2)
                       : "–"}
                   </div>
                 </div>
@@ -389,9 +508,13 @@ const Simulation = ({ filters }) => {
 
       <div className="row g-3 mb-4 mt-4">
         {cards.length > 0
-          ? cards.map((card) => (
+          ? cards.map((card, idx) => (
               <div className="col-md-4 col-lg-3" key={card.label}>
-                <div className="card border shadow-sm h-100">
+                <div
+                  className={`glass-card border shadow-sm h-100 ${
+                    grads[idx % grads.length]
+                  }`}
+                >
                   <div className="card-body">
                     <div className="text-muted small">{card.label}</div>
                     <div className="fs-5 fw-bold">{card.value}</div>
@@ -414,91 +537,24 @@ const Simulation = ({ filters }) => {
       <div className="row g-4 mb-4 mt-4">
         {volumeChartData.length ? (
           <div className="col-lg-6">
-            <div className="card shadow-sm border h-100 pe-4 py-2">
-              <div className="card-body">
-                <h6 className="fw-bold mb-3">{volumeBars?.title}</h6>
-                <div style={{ height: 320 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={volumeChartData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        type="number"
-                        tickFormatter={(v) =>
-                          (v / 1_000_000_000).toFixed(1) + "B"
-                        }
-                      />
-                      <YAxis type="category" dataKey="label" width={120} />
-                      <Tooltip
-                        formatter={(v) => (v / 1_000_000_000).toFixed(5) + "B"}
-                      />
-                      <Legend />
-                      <Bar
-                        dataKey="value"
-                        name="Volume"
-                        fill="#0f62c2"
-                        barSize={40}
-                      >
-                        <LabelList
-                          dataKey="value"
-                          position="insideRight"
-                          formatter={(v) =>
-                            (v / 1_000_000_000).toFixed(2) + "B"
-                          }
-                          fill="white"
-                        />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
+            {renderBarCard(volumeChartData, volumeBars?.title, "#0f62c2")}
           </div>
         ) : null}
-
         {revenueChartData.length ? (
           <div className="col-lg-6">
-            <div className="card shadow-sm border h-100 pe-4 py-2">
-              <div className="card-body">
-                <h6 className="fw-bold mb-3">{revenueBars?.title}</h6>
-                <div style={{ height: 320 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={revenueChartData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        type="number"
-                        tickFormatter={(v) =>
-                          (v / 1_000_000_000).toFixed(1) + "B"
-                        }
-                      />
-                      <YAxis type="category" dataKey="label" width={120} />
-
-                      <Tooltip
-                        formatter={(v) => (v / 1_000_000_000).toFixed(5) + "B"}
-                      />
-                      <Legend />
-
-                      <Bar
-                        dataKey="value"
-                        name="Revenue"
-                        fill="#1e3d7d"
-                        barSize={40}
-                      >
-                        <LabelList
-                          dataKey="value"
-                          position="insideRight"
-                          formatter={(v) =>
-                            (v / 1_000_000_000).toFixed(2) + "B"
-                          }
-                          fill="white"
-                        />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
+            {renderBarCard(revenueChartData, revenueBars?.title, "#1e3d7d")}
           </div>
         ) : null}
+      </div>
+
+      <div className="row g-4 mt-4">
+        <h3 className="fw-bold text-muted text-center">Tables</h3>
+        <div className="col-md-12">
+          {renderTable(contextTable, "Context", "success")}
+        </div>
+        <div className="col-md-12">
+          {renderTable(table, "Simulation Results", "danger")}
+        </div>
       </div>
     </div>
   );

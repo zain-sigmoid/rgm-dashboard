@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import { userContext } from "../../../context/userContext";
 import BarLabel from "../components/BarLabel";
-import { formatNumber, formatVolume } from "../config/labelFormatter";
+import { formatNumber, formatVolume } from "../../config/labelFormatter";
 
 const Contribution = ({ filters }) => {
   const { contribution, getContribution } = useContext(userContext);
