@@ -1,65 +1,23 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-
+import time
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, Field
+from pathlib import Path
+from typing import Dict, List
 
+from src.model.promotion.performance import (
+    PerformanceFilters,
+    FilterOptions,
+    DFTable,
+    KPI,
+    PerformanceResponse,
+)
 from src.utility.logger import AppLogger
 
 ROOT_DIR = Path(__file__).resolve().parents[3]
 DEFAULT_DATA_PATH = ROOT_DIR / "data" / "df_hist_check.csv"
 logger = AppLogger.get_logger(__name__)
-
-
-class PerformanceFilters(BaseModel):
-    categories: Optional[List[str]] = Field(default=None)
-    brands: Optional[List[str]] = Field(default=None)
-    ppgs: Optional[List[str]] = Field(default=None)
-    retailers: Optional[List[str]] = Field(default=None)
-    segment: Optional[List[str]] = Field(default=None)
-    offer_type: Optional[List[str]] = Field(default=None)
-    promo_tactics: Optional[List[str]] = Field(default=None)
-    year: Optional[List[str]] = Field(
-        default=None,
-    )
-    month: Optional[List[str]] = Field(default=None)
-
-
-class FilterOptions(BaseModel):
-    categories: List[str] = Field(default_factory=list)
-    brands: List[str] = Field(default_factory=list)
-    ppgs: List[str] = Field(default_factory=list)
-    retailers: List[str] = Field(default_factory=list)
-    segment: List[str] = Field(default=None)
-    offer_type: List[str] = Field(default_factory=list)
-    promo_tactics: List[str] = Field(default_factory=list)
-    year: List[str] = Field(default_factory=list)
-    month: List[str] = Field(default_factory=list)
-
-
-class KeyMetrics(BaseModel):
-    count_retails: int
-    count_segment: int
-    count_ppg: int
-    roi: float
-    volume_lift_pct: float
-    incremental_volume: float
-
-
-class DFTable(BaseModel):
-    columns: List[str]
-    rows: List[Dict[str, str]]
-
-
-class PerformanceResponse(BaseModel):
-    metrics: KeyMetrics
-    mechanics: DFTable
-    ppg: DFTable
-    subsegment: DFTable
-    retailer: DFTable
 
 
 class PerformanceAnalysis:
@@ -136,6 +94,7 @@ class PerformanceAnalysis:
         df["offer_type"] = df["offer_type"].replace("_", " ", regex=True)
         df["brand_nm"] = df["ppg_id"].str.split("|").str[2]
         df["retailer"] = df["retailer"].apply(lambda x: x.upper())
+        df["brand_nm"] = df["brand_nm"].fillna("").astype(str).str.strip()
 
         return df
 
@@ -144,14 +103,28 @@ class PerformanceAnalysis:
             return "{:.2f}".format(x)  # Format numbers to two decimal places
         return str(x)
 
-    def _apply_filters(df: pd.DataFrame, filters: PerformanceFilters) -> pd.DataFrame:
+    def _format_big_number(self, value: float) -> str:
+        abs_value = abs(value)
+
+        if abs_value >= 1_000_000_000:
+            return f"{value / 1_000_000_000:.2f}B"
+        elif abs_value >= 1_000_000:
+            return f"{value / 1_000_000:.2f}M"
+        elif abs_value >= 1_000:
+            return f"{value / 1_000:.2f}K"
+        else:
+            return f"{value:,.0f}"
+
+    def _apply_filters(
+        self, df: pd.DataFrame, filters: PerformanceFilters
+    ) -> pd.DataFrame:
         df_fil = df.copy()
 
         if filters.brands and "All" not in filters.brands:
             df_fil = df_fil[df_fil["brand_nm"].isin(filters.brands)]
 
         if filters.segment and "All" not in filters.segment:
-            df_fil = df_fil[df_fil["segment"].isin(filters.brands)]
+            df_fil = df_fil[df_fil["segment"].isin(filters.segment)]
 
         if filters.ppgs and "All" not in filters.ppgs:
             df_fil = df_fil[df_fil["ppg_id"].isin(filters.ppgs)]
@@ -201,10 +174,10 @@ class PerformanceAnalysis:
 
         return df_filtered
 
-    def _key_metrics(self, df: pd.DataFrame) -> KeyMetrics:
+    def _key_metrics(self, df: pd.DataFrame) -> List[KPI]:
 
         df_filtered = df.copy()
-        incremental_volume = int(df_filtered["incremental_volume"].sum())
+        incremental_volume_raw = int(df_filtered["incremental_volume"].sum())
         volume = int(df_filtered["total_volume"].sum())
         investment = int(df_filtered["promo_investment"].sum())
         baseline = int(df_filtered["baseline"].sum())
@@ -215,16 +188,20 @@ class PerformanceAnalysis:
         count_retails = df_filtered["retailer"].nunique()
         count_segment = df_filtered["segment"].nunique()
         count_ppg = df_filtered["ppg_id"].nunique()
-        return KeyMetrics(
-            count_retails=count_retails,
-            count_segment=count_segment,
-            count_ppg=count_ppg,
-            roi=ROI,
-            volume_lift_pct=volume_lift_pct,
-            incremental_volume=incremental_volume,
-        )
 
-    def _offer_mechanics(self, df: pd.DataFrame) -> DFTable:
+        incremental_volume = self._format_big_number(incremental_volume_raw)
+        volume_lift_pct = str(volume_lift_pct) + "%"
+
+        return [
+            KPI(label="Retailer Count", value=count_retails),
+            KPI(label="Segment Count", value=count_segment),
+            KPI(label="PPG Count", value=count_ppg),
+            KPI(label="Average ROI", value=ROI),
+            KPI(label="Average Uplift %", value=volume_lift_pct),
+            KPI(label="Incremental Volume", value=incremental_volume),
+        ]
+
+    def _offer_mechanics(self, df: pd.DataFrame) -> pd.DataFrame:
         df_new = (
             df.groupby(["offer_mechanic", "retailer", "ppg_id"])
             .agg(
@@ -284,9 +261,9 @@ class PerformanceAnalysis:
             df_new["Incremental Volume"].astype(int).map("{:,}".format)
         )
 
-        return self._df_to_table(df_new)
+        return df_new
 
-    def _PPG(self, df: pd.DataFrame) -> DFTable:
+    def _PPG(self, df: pd.DataFrame) -> pd.DataFrame:
         df_new = (
             df.groupby(["ppg_id", "retailer"])
             .agg(
@@ -345,9 +322,9 @@ class PerformanceAnalysis:
             df_new["Incremental Volume"].astype(int).map("{:,}".format)
         )
 
-        return self._df_to_table(df_new)
+        return df_new
 
-    def _subsegment(self, df: pd.DataFrame) -> DFTable:
+    def _subsegment(self, df: pd.DataFrame) -> pd.DataFrame:
         df_new = (
             df.groupby(["subsegment_name", "retailer", "ppg_id"])
             .agg(
@@ -407,9 +384,9 @@ class PerformanceAnalysis:
             df_new["Incremental Volume"].astype(int).map("{:,}".format)
         )
 
-        return self._df_to_table(df_new)
+        return df_new
 
-    def _retailer(self, df: pd.DataFrame) -> DFTable:
+    def _retailer(self, df: pd.DataFrame) -> pd.DataFrame:
         df_new = (
             df.groupby(["retailer", "ppg_id"])
             .agg(
@@ -467,45 +444,96 @@ class PerformanceAnalysis:
         df_new["Incremental Volume"] = (
             df_new["Incremental Volume"].astype(int).map("{:,}".format)
         )
-        return self._df_to_table(df_new)
+        return df_new
 
     @staticmethod
-    def build_options(df: pd.DataFrame) -> FilterOptions:
+    def build_options(df: pd.DataFrame, filters: PerformanceFilters) -> FilterOptions:
+        # Base scope for all dependent fields (except brand itself)
+        df_base = df.copy()
         categories = (
             df["category"].dropna().unique().tolist()
             if "category" in df.columns
             else ["SurfaceCare"]
         )
-        brands = (
-            sorted(df["brand_nm"].dropna().unique().tolist())
-            if "brand_nm" in df.columns
-            else []
+
+        # Example: years/month can narrow scope for other fields
+        if filters.year:
+            df_base = df_base[df_base["year"].isin(filters.year)]
+        if filters.month:
+            df_base = df_base[df_base["month"].isin(filters.month)]
+
+        # 1) Brand options -> do NOT filter by selected brand
+        brands = sorted(df_base["brand_nm"].dropna().unique().tolist())
+
+        # 2) Segment options -> filtered by selected brand, but NOT by segment itself
+        df_segment_scope = df_base.copy()
+        if filters.brands:
+            df_segment_scope = df_segment_scope[
+                df_segment_scope["brand_nm"].isin(filters.brands)
+            ]
+        segment = sorted(df_segment_scope["segment"].dropna().unique().tolist())
+
+        # 3) PPG options -> filtered by brand + segment
+        df_ppg_scope = df_segment_scope.copy()
+        if filters.segment:
+            df_ppg_scope = df_ppg_scope[df_ppg_scope["segment"].isin(filters.segment)]
+        ppgs = sorted(df_ppg_scope["ppg_id"].dropna().unique().tolist())
+
+        # 4) Retailer options -> filtered by brand + segment + ppg
+        df_retailer_scope = df_ppg_scope.copy()
+        if filters.ppgs:
+            df_retailer_scope = df_retailer_scope[
+                df_retailer_scope["ppg_id"].isin(filters.ppgs)
+            ]
+        retailers = sorted(df_retailer_scope["retailer"].dropna().unique().tolist())
+
+        # 5) Offer type & promo tactics -> filtered by same scope as retailer
+        offer_type = sorted(df_retailer_scope["offer_type"].dropna().unique().tolist())
+        promo_tactics = sorted(
+            df_retailer_scope["promo_tactic"].dropna().unique().tolist()
         )
-        ppgs = (
-            sorted(df["ppg_nm"].dropna().unique().tolist())
-            if "ppg_nm" in df.columns
-            else []
-        )
-        retailers = sorted(df["retailer_id"].dropna().unique().tolist())
-        segment = sorted(df["segment"].dropna().unique().tolist())
-        offer_type = sorted(df["offer_type"].dropna().unique().tolist())
-        promo_tactic = sorted(df["promo_tactic"].unique().tolist())
-        years = sorted(df["year"].astype(str).unique().tolist())
-        month = sorted(df["month"].unique().tolist())
+
+        # 6) Years & months options -> usually from a broader scope so they don't disappear
+        years = sorted(df["year"].astype(str).dropna().unique().tolist())
+        months = sorted(df["month"].dropna().unique().tolist())
 
         return FilterOptions(
             categories=categories,
             brands=brands,
+            segment=segment,
             ppgs=ppgs,
             retailers=retailers,
-            segment=segment,
             offer_type=offer_type,
-            promo_tactics=promo_tactic,
+            promo_tactics=promo_tactics,
             year=years,
-            month=month,
+            month=months,
         )
 
+    def load_table(self, filters: PerformanceFilters, table_name: str) -> pd.DataFrame:
+        """
+        Compute and return a single DataFrame (mechanics/ppg/subsegment/retailer/metrics)
+        based on the requested table_name.
+        """
+        df = self._load_df()
+        df_filtered = self._apply_filters(df, filters)
+        df_adjusted = self._apply_adjustments(df_filtered)
+
+        table_name = table_name.lower()
+
+        if table_name == "offer_mechanics":
+            return self._offer_mechanics(df_adjusted)
+        elif table_name == "ppgs":
+            return self._PPG(df_adjusted)
+        elif table_name == "subsegment":
+            return self._subsegment(df_adjusted)
+        elif table_name == "retailer":
+            return self._retailer(df_adjusted)
+        else:
+            logger.error(f"Unknown table name: {table_name}")
+            raise ValueError(f"Unknown table name: {table_name}")
+
     def build_performance(self, filters: PerformanceFilters) -> PerformanceResponse:
+        start_total = time.time()
         df = self._load_df()
         df_filtered = self._apply_filters(df, filters)
         df_metrics = self._key_metrics(df_filtered)
@@ -515,10 +543,14 @@ class PerformanceAnalysis:
         df_segment = self._subsegment(df_adjusted)
         df_retailer = self._retailer(df_adjusted)
 
+        logger.info(
+            f"Performance Generated in {time.time() - start_total:.3f} seconds total"
+        )
+
         return PerformanceResponse(
             metrics=df_metrics,
-            mechanics=df_offer_mechanics,
-            ppg=df_ppg,
-            subsegment=df_segment,
-            retailer=df_retailer,
+            mechanics=self._df_to_table(df_offer_mechanics),
+            ppg=self._df_to_table(df_ppg),
+            subsegment=self._df_to_table(df_segment),
+            retailer=self._df_to_table(df_retailer),
         )
